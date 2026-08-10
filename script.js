@@ -3,8 +3,8 @@
    2) Create two Auth users in Supabase Dashboard.
    3) Put their emails in LOGIN_EMAILS.
 */
-const SUPABASE_URL = "COLOCA_AQUI_O_PROJECT_URL";
-const SUPABASE_ANON_KEY = "COLOCA_AQUI_A_CHAVE_ANON_OU_PUBLISHABLE";
+const SUPABASE_URL = 'https://yyyxhrnessxvhtcjuvwh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_PmwWN4Wcke2RxuKuRUf_6Q_9O3W3nxt';
 
 const LOGIN_EMAILS = {
   LadyWhite: "EMAIL_DA_LADYWHITE",
