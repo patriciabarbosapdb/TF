@@ -7,11 +7,11 @@ const SUPABASE_URL = 'https://yyyxhrnessxvhtcjuvwh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_PmwWN4Wcke2RxuKuRUf_6Q_9O3W3nxt';
 
 const LOGIN_EMAILS = {
-  LadyWhite: "EMAIL_DA_LADYWHITE",
-  LadyBlack: "EMAIL_DA_LADYBLACK"
+  LadyWhite: "patriciaduartebarbosa9@gmail.com",
+  LadyBlack: "monicaduartebarbosa@gmail.com"
 };
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let user=null, profile=null, activeTab="notes", bookStatus="to_read", audioTracks=[], audioIndex=0;
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
