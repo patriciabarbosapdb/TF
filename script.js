@@ -1027,148 +1027,579 @@ window.deleteTask =
     loadPersonal();
   };
 
+// ==========================================
+// TF MUSIC
+// Supabase Storage + Database
+// ==========================================
 
-/* MÚSICA */
+let tracks = [];
+let audioIndex = 0;
 
-$('#addMusic')?.addEventListener(
-  'click',
-  () => {
-    $('#audioFiles')?.click();
+
+// ------------------------------------------
+// ABRIR SELEÇÃO DE MÚSICA
+// ------------------------------------------
+
+$('#addMusic')?.addEventListener('click', () => {
+  $('#audioFiles')?.click();
+});
+
+
+// ------------------------------------------
+// ADICIONAR MÚSICAS
+// ------------------------------------------
+
+$('#audioFiles')?.addEventListener('change', async (e) => {
+
+  const files = [...e.target.files];
+
+  if (!files.length) return;
+
+  await uploadMusic(files);
+
+  // Permite voltar a escolher o mesmo ficheiro
+  e.target.value = '';
+});
+
+
+// ------------------------------------------
+// UPLOAD PARA SUPABASE
+// ------------------------------------------
+
+async function uploadMusic(files) {
+
+  const button = $('#addMusic');
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'A adicionar...';
   }
-);
 
-$('#audioFiles')?.addEventListener(
-  'change',
-  e => {
-    audioTracks =
-      [...e.target.files]
-        .map(file => ({
-          name: file.name,
-          url:
-            URL.createObjectURL(file)
-        }));
+  try {
+
+    for (const file of files) {
+
+      // Só aceitar ficheiros de áudio
+      if (!file.type.startsWith('audio/')) {
+        continue;
+      }
+
+
+      const extension =
+        file.name.includes('.')
+          ? file.name.split('.').pop()
+          : 'mp3';
+
+
+      const title =
+        file.name
+          .replace(/\.[^/.]+$/, '')
+          .trim();
+
+
+      // Nome único para o Storage
+      const filePath =
+        `${user.id}/${crypto.randomUUID()}.${extension}`;
+
+
+      // Upload do ficheiro
+      const upload =
+        await sb.storage
+          .from('tf-music')
+          .upload(
+            filePath,
+            file,
+            {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type
+            }
+          );
+
+
+      if (upload.error) {
+
+        console.error(
+          'Erro no upload:',
+          upload.error
+        );
+
+        alert(
+          `Não foi possível adicionar "${file.name}".`
+        );
+
+        continue;
+      }
+
+
+      // Criar URL pública
+      const publicUrl =
+        sb.storage
+          .from('tf-music')
+          .getPublicUrl(filePath);
+
+
+      // Guardar informação na BD
+      const { error } =
+        await sb
+          .from('music')
+          .insert({
+            user_id: user.id,
+            title: title || file.name,
+            file_path: filePath,
+            file_url: publicUrl.data.publicUrl
+          });
+
+
+      if (error) {
+
+        console.error(
+          'Erro na BD:',
+          error
+        );
+
+
+        // Se falhar a BD,
+        // apagar o ficheiro do Storage
+        await sb.storage
+          .from('tf-music')
+          .remove([filePath]);
+
+
+        alert(
+          `Não foi possível guardar "${file.name}".`
+        );
+      }
+    }
+
+
+    // Recarregar lista
+    await loadMusic();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      'Ocorreu um erro ao adicionar a música.'
+    );
+
+
+  } finally {
+
+    if (button) {
+      button.disabled = false;
+      button.textContent =
+        '+ Adicionar música';
+    }
+  }
+}
+
+
+// ------------------------------------------
+// CARREGAR TODAS AS MÚSICAS
+// ------------------------------------------
+
+async function loadMusic() {
+
+  const { data, error } =
+    await sb
+      .from('music')
+      .select('*')
+      .order('created_at', {
+        ascending: true
+      });
+
+
+  if (error) {
+
+    console.error(
+      'Erro ao carregar músicas:',
+      error
+    );
+
+    return;
+  }
+
+
+  tracks = data || [];
+
+
+  // Não existem músicas
+  if (!tracks.length) {
 
     audioIndex = 0;
 
-    if (audioTracks.length) {
-      loadTrack();
-    }
-  }
-);
+    const audio = $('#audio');
 
-function loadTrack() {
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+
+
+    if ($('#trackTitle')) {
+      $('#trackTitle').textContent =
+        'TF playlist';
+    }
+
+
+    if ($('#trackArtist')) {
+      $('#trackArtist').textContent =
+        'Escolhe música';
+    }
+
+
+    if ($('#musicName')) {
+      $('#musicName').textContent =
+        'Ainda não existem músicas.';
+    }
+
+
+    renderMusicList();
+
+    return;
+  }
+
+
+  // Garantir índice válido
+  if (
+    audioIndex < 0 ||
+    audioIndex >= tracks.length
+  ) {
+    audioIndex = 0;
+  }
+
+
+  renderMusicList();
+}
+
+
+// ------------------------------------------
+// MOSTRAR LISTA
+// ------------------------------------------
+
+function renderMusicList() {
+
+  const list = $('#musicList');
+
+  if (!list) return;
+
+
+  if (!tracks.length) {
+
+    list.innerHTML = `
+      <p class="empty-music">
+        Ainda não adicionaram músicas.
+      </p>
+    `;
+
+    return;
+  }
+
+
+  list.innerHTML =
+    tracks.map((track, index) => {
+
+      const active =
+        index === audioIndex
+          ? 'active'
+          : '';
+
+
+      const owner =
+        track.user_id === user.id
+          ? 'Adicionada por ti'
+          : 'Adicionada pela outra pessoa';
+
+
+      return `
+        <div
+          class="music-item ${active}"
+        >
+
+          <button
+            class="music-select"
+            data-index="${index}"
+          >
+
+            <span class="music-number">
+              ${String(index + 1).padStart(2, '0')}
+            </span>
+
+            <span class="music-item-info">
+
+              <strong>
+                ${esc(track.title)}
+              </strong>
+
+              <small>
+                ${owner}
+              </small>
+
+            </span>
+
+            <span class="music-play">
+              ${
+                index === audioIndex
+                  ? 'Ⅱ'
+                  : '▶'
+              }
+            </span>
+
+          </button>
+
+
+          ${
+            track.user_id === user.id
+              ? `
+                <button
+                  class="music-delete"
+                  data-id="${track.id}"
+                >
+                  ×
+                </button>
+              `
+              : ''
+          }
+
+        </div>
+      `;
+
+    }).join('');
+
+
+  // Selecionar música
+  list
+    .querySelectorAll('.music-select')
+    .forEach(button => {
+
+      button.addEventListener(
+        'click',
+        () => {
+
+          const index =
+            Number(button.dataset.index);
+
+          selectTrack(index);
+
+        }
+      );
+
+    });
+
+
+  // Apagar música
+  list
+    .querySelectorAll('.music-delete')
+    .forEach(button => {
+
+      button.addEventListener(
+        'click',
+        () => {
+
+          deleteMusic(button.dataset.id);
+
+        }
+      );
+
+    });
+}
+
+
+// ------------------------------------------
+// ESCOLHER MÚSICA
+// ------------------------------------------
+
+function selectTrack(index) {
+
+  if (!tracks[index]) return;
+
+
+  audioIndex = index;
+
+
   const track =
-    audioTracks[audioIndex];
+    tracks[audioIndex];
+
 
   const audio =
     $('#audio');
 
-  if (!track || !audio) return;
 
-  audio.src = track.url;
+  if (!audio) return;
+
+
+  audio.src =
+    track.file_url;
+
+
+  audio.load();
+
 
   if ($('#trackTitle')) {
     $('#trackTitle').textContent =
-      track.name;
+      track.title;
   }
 
+
   if ($('#trackArtist')) {
+
     $('#trackArtist').textContent =
-      'TF / música local';
+      track.user_id === user.id
+        ? 'Adicionada por ti'
+        : 'Adicionada pela outra pessoa';
+
   }
+
 
   if ($('#musicName')) {
     $('#musicName').textContent =
-      track.name;
+      track.title;
   }
+
+
+  renderMusicList();
+
 
   audio
     .play()
     .then(() => {
+
       if ($('#play')) {
         $('#play').textContent =
           'Ⅱ';
       }
+
     })
     .catch(() => {});
 }
 
+
+// ------------------------------------------
+// PLAY / PAUSE
+// ------------------------------------------
+
 $('#play')?.addEventListener(
   'click',
   () => {
+
     const audio =
       $('#audio');
 
+
     if (!audio?.src) return;
 
+
     if (audio.paused) {
+
       audio.play();
 
       $('#play').textContent =
         'Ⅱ';
+
     } else {
+
       audio.pause();
 
       $('#play').textContent =
         '▶';
     }
+
   }
 );
+
+
+// ------------------------------------------
+// ANTERIOR
+// ------------------------------------------
 
 $('#prev')?.addEventListener(
   'click',
   () => {
-    if (!audioTracks.length)
-      return;
+
+    if (!tracks.length) return;
+
 
     audioIndex =
       (
-        audioIndex - 1 +
-        audioTracks.length
+        audioIndex -
+        1 +
+        tracks.length
       ) %
-      audioTracks.length;
+      tracks.length;
 
-    loadTrack();
+
+    selectTrack(audioIndex);
+
   }
 );
+
+
+// ------------------------------------------
+// PRÓXIMA
+// ------------------------------------------
 
 $('#next')?.addEventListener(
   'click',
   () => {
-    if (!audioTracks.length)
-      return;
+
+    if (!tracks.length) return;
+
 
     audioIndex =
       (
-        audioIndex + 1
+        audioIndex +
+        1
       ) %
-      audioTracks.length;
+      tracks.length;
 
-    loadTrack();
+
+    selectTrack(audioIndex);
+
   }
 );
+
+
+// ------------------------------------------
+// TERMINOU → PRÓXIMA
+// ------------------------------------------
 
 $('#audio')?.addEventListener(
   'ended',
   () => {
+
+    if (!tracks.length) return;
+
     $('#next')?.click();
+
   }
 );
+
+
+// ------------------------------------------
+// PROGRESSO
+// ------------------------------------------
 
 $('#audio')?.addEventListener(
   'timeupdate',
   () => {
+
     const audio =
       $('#audio');
 
     const progress =
       $('#progress');
 
+
     if (
       !audio ||
       !progress ||
       !audio.duration
     ) {
+
       if (progress) {
         progress.style.width =
           '0%';
@@ -1177,15 +1608,111 @@ $('#audio')?.addEventListener(
       return;
     }
 
+
+    const percentage =
+      (
+        audio.currentTime /
+        audio.duration
+      ) * 100;
+
+
     progress.style.width =
-      `${
-        (
-          audio.currentTime /
-          audio.duration
-        ) * 100
-      }%`;
+      `${percentage}%`;
+
   }
 );
+
+
+// ------------------------------------------
+// APAGAR MÚSICA
+// ------------------------------------------
+
+async function deleteMusic(id) {
+
+  const track =
+    tracks.find(
+      item => item.id === id
+    );
+
+
+  if (!track) return;
+
+
+  const confirmed =
+    confirm(
+      `Queres apagar "${track.title}"?`
+    );
+
+
+  if (!confirmed) return;
+
+
+  // Apagar ficheiro do Storage
+  const storage =
+    await sb.storage
+      .from('tf-music')
+      .remove([
+        track.file_path
+      ]);
+
+
+  if (storage.error) {
+
+    console.error(
+      storage.error
+    );
+
+    alert(
+      'Não foi possível apagar o ficheiro.'
+    );
+
+    return;
+  }
+
+
+  // Apagar registo da BD
+  const database =
+    await sb
+      .from('music')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+
+  if (database.error) {
+
+    console.error(
+      database.error
+    );
+
+    alert(
+      'Não foi possível apagar a música.'
+    );
+
+    return;
+  }
+
+
+  // Se apagámos a música que estava a tocar
+  const audio =
+    $('#audio');
+
+
+  if (audio) {
+
+    audio.pause();
+
+    audio.removeAttribute('src');
+
+    audio.load();
+  }
+
+
+  audioIndex = 0;
+
+
+  await loadMusic();
+}
 
 
 /* CARREGAMENTO */
