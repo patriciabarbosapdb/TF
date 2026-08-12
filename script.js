@@ -1982,7 +1982,8 @@ async function loadAll() {
   await Promise.all([
     loadChat(),
     loadRefs(),
-    loadPersonal()
+    loadPersonal(),
+    loadMusic()
   ]);
 }
 
