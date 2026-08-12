@@ -1355,6 +1355,693 @@ $('#notes')?.addEventListener(
     }
 );
 
+/* =========================================
+   NOTA RÁPIDA — DESENHO
+========================================= */
+
+let quickCanvas = null;
+let quickCtx = null;
+
+let drawing = false;
+
+let quickHistory = [];
+let quickHistoryIndex = -1;
+
+
+/* -----------------------------------------
+   INICIAR CANVAS
+----------------------------------------- */
+
+function initQuickCanvas() {
+
+  quickCanvas = $('#quickCanvas');
+
+  if (!quickCanvas) return;
+
+  quickCtx =
+    quickCanvas.getContext('2d');
+
+  resizeQuickCanvas();
+
+  quickCanvas.addEventListener(
+    'pointerdown',
+    startDrawing
+  );
+
+  quickCanvas.addEventListener(
+    'pointermove',
+    draw
+  );
+
+  quickCanvas.addEventListener(
+    'pointerup',
+    stopDrawing
+  );
+
+  quickCanvas.addEventListener(
+    'pointercancel',
+    stopDrawing
+  );
+
+  quickCanvas.addEventListener(
+    'pointerleave',
+    stopDrawing
+  );
+
+
+  quickCanvas.addEventListener(
+    'touchstart',
+    e => {
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+
+
+  saveQuickHistory();
+}
+
+
+/* -----------------------------------------
+   TAMANHO DO CANVAS
+----------------------------------------- */
+
+function resizeQuickCanvas() {
+
+  if (!quickCanvas) return;
+
+  const rect =
+    quickCanvas.getBoundingClientRect();
+
+  if (!rect.width || !rect.height) {
+    return;
+  }
+
+  const ratio =
+    window.devicePixelRatio || 1;
+
+  const oldCanvas =
+    document.createElement('canvas');
+
+  if (
+    quickCanvas.width &&
+    quickCanvas.height
+  ) {
+    oldCanvas.width =
+      quickCanvas.width;
+
+    oldCanvas.height =
+      quickCanvas.height;
+
+    const oldCtx =
+      oldCanvas.getContext('2d');
+
+    oldCtx.drawImage(
+      quickCanvas,
+      0,
+      0
+    );
+  }
+
+  quickCanvas.width =
+    rect.width * ratio;
+
+  quickCanvas.height =
+    rect.height * ratio;
+
+  quickCtx =
+    quickCanvas.getContext('2d');
+
+  quickCtx.scale(
+    ratio,
+    ratio
+  );
+
+  quickCtx.lineCap =
+    'round';
+
+  quickCtx.lineJoin =
+    'round';
+
+  quickCtx.strokeStyle =
+    '#111';
+
+  quickCtx.lineWidth =
+    Number(
+      $('#quickSize')?.value || 3
+    );
+
+
+  if (
+    oldCanvas.width &&
+    oldCanvas.height
+  ) {
+
+    quickCtx.drawImage(
+      oldCanvas,
+      0,
+      0,
+      oldCanvas.width / ratio,
+      oldCanvas.height / ratio
+    );
+
+  }
+
+}
+
+
+/* -----------------------------------------
+   COORDENADAS
+----------------------------------------- */
+
+function getCanvasPosition(event) {
+
+  const rect =
+    quickCanvas.getBoundingClientRect();
+
+  return {
+    x:
+      event.clientX -
+      rect.left,
+
+    y:
+      event.clientY -
+      rect.top
+  };
+
+}
+
+
+/* -----------------------------------------
+   COMEÇAR DESENHO
+----------------------------------------- */
+
+function startDrawing(event) {
+
+  if (!quickCtx) return;
+
+  drawing = true;
+
+  const position =
+    getCanvasPosition(event);
+
+  quickCtx.beginPath();
+
+  quickCtx.moveTo(
+    position.x,
+    position.y
+  );
+
+  quickCanvas.setPointerCapture(
+    event.pointerId
+  );
+
+}
+
+
+/* -----------------------------------------
+   DESENHAR
+----------------------------------------- */
+
+function draw(event) {
+
+  if (
+    !drawing ||
+    !quickCtx
+  ) {
+    return;
+  }
+
+  const position =
+    getCanvasPosition(event);
+
+  quickCtx.lineTo(
+    position.x,
+    position.y
+  );
+
+  quickCtx.stroke();
+
+}
+
+
+/* -----------------------------------------
+   TERMINAR DESENHO
+----------------------------------------- */
+
+function stopDrawing(event) {
+
+  if (!drawing) return;
+
+  drawing = false;
+
+  quickCtx?.closePath();
+
+  saveQuickHistory();
+
+  saveQuickDrawing();
+}
+
+
+/* -----------------------------------------
+   TAMANHO DO TRAÇO
+----------------------------------------- */
+
+$('#quickSize')?.addEventListener(
+  'input',
+  event => {
+
+    if (!quickCtx) return;
+
+    quickCtx.lineWidth =
+      Number(event.target.value);
+
+  }
+);
+
+
+/* -----------------------------------------
+   HISTÓRICO
+----------------------------------------- */
+
+function saveQuickHistory() {
+
+  if (!quickCanvas) return;
+
+  const image =
+    quickCanvas.toDataURL(
+      'image/png'
+    );
+
+  quickHistory =
+    quickHistory.slice(
+      0,
+      quickHistoryIndex + 1
+    );
+
+  quickHistory.push(image);
+
+  quickHistoryIndex =
+    quickHistory.length - 1;
+
+}
+
+
+/* -----------------------------------------
+   RESTAURAR HISTÓRICO
+----------------------------------------- */
+
+function restoreQuickHistory(index) {
+
+  if (
+    !quickCanvas ||
+    !quickCtx ||
+    !quickHistory[index]
+  ) {
+    return;
+  }
+
+  const image =
+    new Image();
+
+  image.onload = () => {
+
+    const rect =
+      quickCanvas.getBoundingClientRect();
+
+    quickCtx.clearRect(
+      0,
+      0,
+      rect.width,
+      rect.height
+    );
+
+    quickCtx.drawImage(
+      image,
+      0,
+      0,
+      rect.width,
+      rect.height
+    );
+
+  };
+
+  image.src =
+    quickHistory[index];
+
+}
+
+
+/* -----------------------------------------
+   DESFAZER
+----------------------------------------- */
+
+$('#quickUndo')?.addEventListener(
+  'click',
+  () => {
+
+    if (
+      quickHistoryIndex <= 0
+    ) {
+      return;
+    }
+
+    quickHistoryIndex--;
+
+    restoreQuickHistory(
+      quickHistoryIndex
+    );
+
+  }
+);
+
+
+/* -----------------------------------------
+   REFAZER
+----------------------------------------- */
+
+$('#quickRedo')?.addEventListener(
+  'click',
+  () => {
+
+    if (
+      quickHistoryIndex >=
+      quickHistory.length - 1
+    ) {
+      return;
+    }
+
+    quickHistoryIndex++;
+
+    restoreQuickHistory(
+      quickHistoryIndex
+    );
+
+  }
+);
+
+
+/* -----------------------------------------
+   LIMPAR
+----------------------------------------- */
+
+function clearQuickCanvas() {
+
+  if (
+    !quickCanvas ||
+    !quickCtx
+  ) {
+    return;
+  }
+
+  const rect =
+    quickCanvas.getBoundingClientRect();
+
+  quickCtx.clearRect(
+    0,
+    0,
+    rect.width,
+    rect.height
+  );
+
+  saveQuickHistory();
+
+}
+
+
+/* Os dois botões fazem a mesma coisa */
+
+$('#quickClear')?.addEventListener(
+  'click',
+  clearQuickCanvas
+);
+
+$('#clearQuick')?.addEventListener(
+  'click',
+  clearQuickCanvas
+);
+
+
+/* -----------------------------------------
+   GUARDAR DESENHO
+----------------------------------------- */
+
+$('#quickSave')?.addEventListener(
+  'click',
+  saveQuickDrawing
+);
+
+
+async function saveQuickDrawing() {
+
+  if (
+    !user ||
+    !quickCanvas
+  ) {
+    return;
+  }
+
+  const status =
+    $('#quickStatus');
+
+  if (status) {
+    status.textContent =
+      'A guardar...';
+  }
+
+
+  try {
+
+    const blob =
+      await new Promise(
+        resolve => {
+
+          quickCanvas.toBlob(
+            resolve,
+            'image/png'
+          );
+
+        }
+      );
+
+
+    if (!blob) {
+      throw new Error(
+        'Não foi possível criar a imagem.'
+      );
+    }
+
+
+    const filePath =
+      `${user.id}/quick-${Date.now()}.png`;
+
+
+    const upload =
+      await sb.storage
+        .from('tf-quick')
+        .upload(
+          filePath,
+          blob,
+          {
+            contentType:
+              'image/png',
+
+            upsert:
+              false
+          }
+        );
+
+
+    if (upload.error) {
+      throw upload.error;
+    }
+
+
+    const publicUrl =
+      sb.storage
+        .from('tf-quick')
+        .getPublicUrl(
+          filePath
+        );
+
+
+    /*
+      Guardamos a referência
+      do desenho na tabela quick_notes.
+    */
+
+    const { error } =
+      await sb
+        .from('quick_notes')
+        .upsert(
+          {
+            user_id:
+              user.id,
+
+            image_url:
+              publicUrl
+                .data
+                .publicUrl,
+
+            file_path:
+              filePath,
+
+            updated_at:
+              new Date()
+                .toISOString()
+          },
+          {
+            onConflict:
+              'user_id'
+          }
+        );
+
+
+    if (error) {
+
+      /*
+        Se a BD falhar,
+        removemos o ficheiro.
+      */
+
+      await sb.storage
+        .from('tf-quick')
+        .remove([
+          filePath
+        ]);
+
+      throw error;
+    }
+
+
+    if (status) {
+      status.textContent =
+        'Guardado ✓';
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      'Erro ao guardar nota rápida:',
+      error
+    );
+
+    if (status) {
+      status.textContent =
+        'Erro ao guardar';
+    }
+
+  }
+
+}
+
+
+/* -----------------------------------------
+   CARREGAR DESENHO GUARDADO
+----------------------------------------- */
+
+async function loadQuickDrawing() {
+
+  if (
+    !user ||
+    !quickCanvas ||
+    !quickCtx
+  ) {
+    return;
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await sb
+      .from('quick_notes')
+      .select(
+        'image_url'
+      )
+      .eq(
+        'user_id',
+        user.id
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    console.error(
+      'Erro ao carregar nota rápida:',
+      error
+    );
+
+    return;
+  }
+
+
+  if (
+    !data ||
+    !data.image_url
+  ) {
+    return;
+  }
+
+
+  const image =
+    new Image();
+
+
+  image.onload = () => {
+
+    const rect =
+      quickCanvas.getBoundingClientRect();
+
+    quickCtx.clearRect(
+      0,
+      0,
+      rect.width,
+      rect.height
+    );
+
+    quickCtx.drawImage(
+      image,
+      0,
+      0,
+      rect.width,
+      rect.height
+    );
+
+    saveQuickHistory();
+
+  };
+
+
+  image.src =
+    data.image_url;
+
+}
+
+
+/* -----------------------------------------
+   INICIALIZAÇÃO
+----------------------------------------- */
+
+function openQuickDrawing() {
+
+  go('quick');
+
+  setTimeout(
+    () => {
+
+      initQuickCanvas();
+
+      loadQuickDrawing();
+
+    },
+    100
+  );
+
+}
 
 /* =========================================
    QUICK NOTE
