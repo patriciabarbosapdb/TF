@@ -1,0 +1,13 @@
+{
+  "name": "TF",
+  "short_name": "TF",
+  "start_url": "./",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "2000x2000",
+      "type": "image/png"
+    }
+  ]
+}
