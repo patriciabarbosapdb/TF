@@ -1,158 +1,351 @@
-/* TF — Supabase version */
+/* =========================================
+   TF — SUPABASE
+========================================= */
 
-const SUPABASE_URL = 'https://yyyxhrnessxvhtcjuvwh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_PmwWN4Wcke2RxuKuRUf_6Q_9O3W3nxt';
+const SUPABASE_URL =
+    'https://yyyxhrnessxvhtcjuvwh.supabase.co';
+
+const SUPABASE_KEY =
+    'sb_publishable_PmwWN4Wcke2RxuKuRUf_6Q_9O3W3nxt';
+
 
 const LOGIN_EMAILS = {
-  LadyWhite: 'patriciaduartebarbosa9@gmail.com',
-  LadyBlack: 'monicaduartebarbosa@gmail.com'
+
+    LadyWhite:
+        'patriciaduartebarbosa9@gmail.com',
+
+    LadyBlack:
+        'monicaduartebarbosa@gmail.com'
+
 };
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =========================================
+   SUPABASE
+========================================= */
+
+const sb =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================
+   VARIABLES
+========================================= */
 
 let user = null;
 let profile = null;
+
 let activeTab = 'notes';
 let bookStatus = 'to_read';
+
 let audioTracks = [];
 let audioIndex = 0;
+
 let realtimeChannel = null;
 
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
 
-const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#039;'
-}[c]));
+/* =========================================
+   HELPERS
+========================================= */
 
-const url = s => /^https?:\/\//i.test(s || '') ? s : '';
+const $ =
+    selector =>
+        document.querySelector(selector);
 
-function showError(msg) {
-  const el = $('#loginError');
-  if (el) el.textContent = msg;
+const $$ =
+    selector =>
+        [...document.querySelectorAll(selector)];
+
+
+const esc =
+    value =>
+        (value ?? '')
+            .toString()
+            .replace(
+                /[&<>"']/g,
+                char => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[char])
+            );
+
+
+const validUrl =
+    value =>
+        /^https?:\/\//i.test(value || '')
+            ? value
+            : '';
+
+
+/* =========================================
+   LOGIN ERROR
+========================================= */
+
+function showError(message) {
+
+    const element =
+        $('#loginError');
+
+    if (element) {
+        element.textContent =
+            message;
+    }
+
 }
+
+
+/* =========================================
+   BOOT
+========================================= */
 
 async function boot() {
-  if (!window.supabase) {
-    showError('A biblioteca do Supabase não foi carregada.');
-    return;
-  }
 
-  const { data, error } = await sb.auth.getSession();
+    if (!window.supabase) {
 
-  if (error) {
-    console.error(error);
-    showError('Não foi possível iniciar a sessão.');
-    return;
-  }
+        showError(
+            'A biblioteca do Supabase não foi carregada.'
+        );
 
-  if (data.session) {
-    user = data.session.user;
-    await loadProfile();
-
-    if (profile) {
-      showApp();
+        return;
     }
-  }
 
-  sb.auth.onAuthStateChange(async (_event, session) => {
-    if (session) {
-      user = session.user;
-      await loadProfile();
 
-      if (profile) {
-        showApp();
-      }
-    } else {
-      user = null;
-      profile = null;
+    const {
+        data,
+        error
+    } =
+        await sb.auth.getSession();
 
-      $('#app')?.classList.add('hidden');
-      $('#login')?.classList.remove('hidden');
+
+    if (error) {
+
+        console.error(error);
+
+        showError(
+            'Não foi possível iniciar a sessão.'
+        );
+
+        return;
     }
-  });
+
+
+    if (data.session) {
+
+        user =
+            data.session.user;
+
+        await loadProfile();
+
+
+        if (profile) {
+            showApp();
+        }
+
+    }
+
+
+    sb.auth.onAuthStateChange(
+        async (_event, session) => {
+
+            if (session) {
+
+                user =
+                    session.user;
+
+                await loadProfile();
+
+
+                if (profile) {
+                    showApp();
+                }
+
+            } else {
+
+                user = null;
+                profile = null;
+
+                $('#app')
+                    ?.classList
+                    .add('hidden');
+
+                $('#login')
+                    ?.classList
+                    .remove('hidden');
+
+            }
+
+        }
+    );
+
 }
+
+
+/* =========================================
+   PROFILE
+========================================= */
 
 async function loadProfile() {
-  if (!user) return;
 
-  const { data: p, error } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
+    if (!user) return;
 
-  if (error) {
-    console.error(error);
-    showError(error.message);
-    return;
-  }
 
-  if (p) {
-    profile = p;
-    return;
-  }
+    const {
+        data: p,
+        error
+    } =
+        await sb
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
 
-  const username = Object.keys(LOGIN_EMAILS).find(
-    k => LOGIN_EMAILS[k].toLowerCase() === user.email?.toLowerCase()
-  );
 
-  if (!username) {
-    profile = null;
-    return;
-  }
+    if (error) {
 
-  const { data: created, error: insertError } = await sb
-    .from('profiles')
-    .insert({
-      id: user.id,
-      username
-    })
-    .select()
-    .single();
+        console.error(error);
 
-  if (insertError) {
-    console.error(insertError);
-    showError('Não foi possível criar o perfil.');
-    return;
-  }
+        showError(
+            error.message
+        );
 
-  profile = created;
+        return;
+    }
+
+
+    if (p) {
+
+        profile = p;
+
+        return;
+    }
+
+
+    const username =
+        Object.keys(
+            LOGIN_EMAILS
+        ).find(
+            key =>
+                LOGIN_EMAILS[key]
+                    .toLowerCase() ===
+                user.email
+                    ?.toLowerCase()
+        );
+
+
+    if (!username) {
+
+        profile = null;
+
+        return;
+    }
+
+
+    const {
+        data: created,
+        error: insertError
+    } =
+        await sb
+            .from('profiles')
+            .insert({
+                id: user.id,
+                username
+            })
+            .select()
+            .single();
+
+
+    if (insertError) {
+
+        console.error(
+            insertError
+        );
+
+        showError(
+            'Não foi possível criar o perfil.'
+        );
+
+        return;
+    }
+
+
+    profile = created;
+
 }
+
+
+/* =========================================
+   SHOW APP
+========================================= */
 
 function showApp() {
-  if (!profile) {
-    showError('Esta conta não está autorizada no TF.');
-    return;
-  }
 
-  $('#login')?.classList.add('hidden');
-  $('#app')?.classList.remove('hidden');
+    if (!profile) {
 
-  const name = profile.username;
+        showError(
+            'Esta conta não está autorizada no TF.'
+        );
 
-  if ($('#homeName')) {
-    $('#homeName').textContent = name;
-  }
+        return;
+    }
 
-  if ($('#drawerName')) {
-    $('#drawerName').textContent = name;
-  }
 
-  const avatar = $('#avatar') || $('#drawerAvatar');
+    $('#login')
+        ?.classList
+        .add('hidden');
 
-  if (avatar) {
-    avatar.textContent = name === 'LadyWhite' ? 'W' : 'B';
-  }
+    $('#app')
+        ?.classList
+        .remove('hidden');
 
-  loadAll();
-  subscribeRealtime();
+
+    const name =
+        profile.username;
+
+
+    if ($('#homeName')) {
+
+        $('#homeName')
+            .textContent =
+            name;
+
+    }
+
+
+    if ($('#drawerName')) {
+
+        $('#drawerName')
+            .textContent =
+            name;
+
+    }
+
+
+    const avatar =
+        $('#avatar') ||
+        $('#drawerAvatar');
+
+
+    if (avatar) {
+
+        avatar.textContent =
+            name === 'LadyWhite'
+                ? 'W'
+                : 'B';
+
+    }
+
+
+    loadAll();
+
+    subscribeRealtime();
+
 }
-
 
 /* LOGIN */
 
