@@ -2699,92 +2699,63 @@ window.deleteTask =
    TF MUSIC
 ========================================= */
 
-
 /* =========================================
    ABRIR SELEÇÃO
 ========================================= */
 
-$('#addMusic')
-    ?.addEventListener(
-        'click',
-        () => {
+$('#addMusic')?.addEventListener('click', () => {
 
-            $('#audioFiles')
-                ?.click();
+    $('#audioFiles')?.click();
 
-        }
-    );
+});
 
 
 /* =========================================
    SELECIONAR FICHEIROS
 ========================================= */
 
-$('#audioFiles')
-    ?.addEventListener(
-        'change',
-        async e => {
+$('#audioFiles')?.addEventListener('change', async e => {
 
-            const files =
-                [...e.target.files];
+    const files = [...e.target.files];
 
+    if (!files.length) return;
 
-            if (!files.length) return;
+    await uploadMusic(files);
 
+    e.target.value = '';
 
-            await uploadMusic(
-                files
-            );
-
-
-            e.target.value =
-                '';
-
-        }
-    );
+});
 
 
 /* =========================================
    UPLOAD MÚSICA
 ========================================= */
 
-async function uploadMusic(
-    files
-) {
+async function uploadMusic(files) {
 
     if (!user || !sb) return;
 
-
-    const button =
-        $('#addMusic');
-
+    const button = $('#addMusic');
 
     if (button) {
 
-        button.disabled =
-            true;
-
-        button.textContent =
-            'A adicionar...';
+        button.disabled = true;
+        button.textContent = 'A adicionar...';
 
     }
-
 
     try {
 
         for (const file of files) {
 
-            if (
-                !file.type.startsWith(
-                    'audio/'
-                )
-            ) {
+            if (!file.type.startsWith('audio/')) {
 
                 alert(
                     `"${file.name}" não é um ficheiro de áudio.`
                 );
 
                 continue;
+
             }
 
 
@@ -2799,16 +2770,17 @@ async function uploadMusic(
 
             const title =
                 file.name
-                    .replace(
-                        /\.[^/.]+$/,
-                        ''
-                    )
+                    .replace(/\.[^/.]+$/, '')
                     .trim();
 
 
             const filePath =
                 `${user.id}/${crypto.randomUUID()}.${extension}`;
 
+
+            /* =========================
+               STORAGE
+            ========================= */
 
             const upload =
                 await sb.storage
@@ -2817,14 +2789,9 @@ async function uploadMusic(
                         filePath,
                         file,
                         {
-                            cacheControl:
-                                '3600',
-
-                            upsert:
-                                false,
-
-                            contentType:
-                                file.type
+                            cacheControl: '3600',
+                            upsert: false,
+                            contentType: file.type
                         }
                     );
 
@@ -2841,36 +2808,57 @@ async function uploadMusic(
                 );
 
                 continue;
+
             }
 
+
+            /* =========================
+               URL PÚBLICA
+            ========================= */
 
             const publicUrl =
                 sb.storage
                     .from('tf-music')
-                    .getPublicUrl(
-                        filePath
-                    );
+                    .getPublicUrl(filePath);
 
+
+            const fileUrl =
+                publicUrl?.data?.publicUrl;
+
+
+            if (!fileUrl) {
+
+                console.error(
+                    'Não foi possível obter a URL:',
+                    publicUrl
+                );
+
+                await sb.storage
+                    .from('tf-music')
+                    .remove([filePath]);
+
+                alert(
+                    `Não foi possível obter o endereço de "${file.name}".`
+                );
+
+                continue;
+
+            }
+
+
+            /* =========================
+               BASE DE DADOS
+            ========================= */
 
             const {
                 error
             } = await sb
                 .from('music')
                 .insert({
-                    user_id:
-                        user.id,
-
-                    title:
-                        title ||
-                        file.name,
-
-                    file_path:
-                        filePath,
-
-                    file_url:
-                        publicUrl
-                            .data
-                            .publicUrl
+                    user_id: user.id,
+                    title: title || file.name,
+                    file_path: filePath,
+                    file_url: fileUrl
                 });
 
 
@@ -2881,17 +2869,15 @@ async function uploadMusic(
                     error
                 );
 
-
                 await sb.storage
                     .from('tf-music')
-                    .remove([
-                        filePath
-                    ]);
-
+                    .remove([filePath]);
 
                 alert(
                     `Não foi possível guardar "${file.name}".`
                 );
+
+                continue;
 
             }
 
@@ -2912,19 +2898,18 @@ async function uploadMusic(
             'Ocorreu um erro ao adicionar a música.'
         );
 
+
     } finally {
 
         if (button) {
 
-            button.disabled =
-                false;
-
-            button.textContent =
-                '+ Adicionar música';
+            button.disabled = false;
+            button.textContent = '+ Adicionar música';
 
         }
 
     }
+
 }
 
 
@@ -2959,30 +2944,36 @@ async function loadMusic() {
         );
 
         return;
+
     }
 
 
-    tracks =
-        data || [];
+    tracks = data || [];
 
+
+    console.log(
+        'TF Music — músicas carregadas:',
+        tracks
+    );
+
+
+    /* =========================
+       SEM MÚSICAS
+    ========================= */
 
     if (!tracks.length) {
 
-        audioIndex =
-            0;
+        audioIndex = 0;
 
 
-        const audio =
-            $('#audio');
+        const audio = $('#audio');
 
 
         if (audio) {
 
             audio.pause();
 
-            audio.removeAttribute(
-                'src'
-            );
+            audio.removeAttribute('src');
 
             audio.load();
 
@@ -2991,8 +2982,7 @@ async function loadMusic() {
 
         if ($('#trackTitle')) {
 
-            $('#trackTitle')
-                .textContent =
+            $('#trackTitle').textContent =
                 'TF playlist';
 
         }
@@ -3000,8 +2990,7 @@ async function loadMusic() {
 
         if ($('#trackArtist')) {
 
-            $('#trackArtist')
-                .textContent =
+            $('#trackArtist').textContent =
                 'Escolhe música';
 
         }
@@ -3009,8 +2998,7 @@ async function loadMusic() {
 
         if ($('#musicName')) {
 
-            $('#musicName')
-                .textContent =
+            $('#musicName').textContent =
                 'Ainda não existem músicas.';
 
         }
@@ -3018,8 +3006,7 @@ async function loadMusic() {
 
         if ($('#play')) {
 
-            $('#play')
-                .textContent =
+            $('#play').textContent =
                 '▶';
 
         }
@@ -3028,21 +3015,144 @@ async function loadMusic() {
         renderMusicList();
 
         return;
+
     }
 
+
+    /* =========================
+       CORRIGIR ÍNDICE
+    ========================= */
 
     if (
         audioIndex < 0 ||
         audioIndex >= tracks.length
     ) {
 
-        audioIndex =
-            0;
+        audioIndex = 0;
+
+    }
+
+
+    /*
+       IMPORTANTE:
+       Carrega a primeira música no player,
+       mas NÃO começa automaticamente.
+    */
+
+    setTrack(
+        audioIndex,
+        false
+    );
+
+
+    renderMusicList();
+
+}
+
+
+/* =========================================
+   DEFINIR MÚSICA ATUAL
+========================================= */
+
+function setTrack(index, autoplay = false) {
+
+    if (!tracks[index]) return;
+
+
+    audioIndex = index;
+
+
+    const track = tracks[audioIndex];
+
+    const audio = $('#audio');
+
+
+    if (!audio) return;
+
+
+    const source =
+        validUrl(track.file_url);
+
+
+    if (!source) {
+
+        console.error(
+            'URL de música inválido:',
+            track.file_url
+        );
+
+        return;
+
+    }
+
+
+    audio.pause();
+
+    audio.src = source;
+
+    audio.load();
+
+
+    if ($('#trackTitle')) {
+
+        $('#trackTitle').textContent =
+            track.title;
+
+    }
+
+
+    if ($('#trackArtist')) {
+
+        $('#trackArtist').textContent =
+            track.user_id === user.id
+                ? 'Adicionada por ti'
+                : 'Adicionada pela outra pessoa';
+
+    }
+
+
+    if ($('#musicName')) {
+
+        $('#musicName').textContent =
+            track.title;
+
+    }
+
+
+    if ($('#play')) {
+
+        $('#play').textContent =
+            '▶';
 
     }
 
 
     renderMusicList();
+
+
+    if (autoplay) {
+
+        audio.play()
+            .then(() => {
+
+                if ($('#play')) {
+
+                    $('#play').textContent =
+                        'Ⅱ';
+
+                }
+
+            })
+            .catch(error => {
+
+                console.warn(
+                    'Não foi possível reproduzir a música:',
+                    error
+                );
+
+            });
+
+    }
 
 }
 
@@ -3053,8 +3163,7 @@ async function loadMusic() {
 
 function renderMusicList() {
 
-    const list =
-        $('#musicList');
+    const list = $('#musicList');
 
 
     if (!list) return;
@@ -3069,150 +3178,134 @@ function renderMusicList() {
         `;
 
         return;
+
     }
 
 
     list.innerHTML =
         tracks
-            .map(
-                (track, index) => {
+            .map((track, index) => {
 
-                    const active =
-                        index === audioIndex
-                            ? 'active'
-                            : '';
-
-
-                    const owner =
-                        track.user_id === user.id
-                            ? 'Adicionada por ti'
-                            : 'Adicionada pela outra pessoa';
+                const active =
+                    index === audioIndex
+                        ? 'active'
+                        : '';
 
 
-                    return `
-                        <div
-                            class="music-item ${active}"
+                const owner =
+                    track.user_id === user.id
+                        ? 'Adicionada por ti'
+                        : 'Adicionada pela outra pessoa';
+
+
+                return `
+                    <div class="music-item ${active}">
+
+                        <button
+                            type="button"
+                            class="music-select"
+                            data-index="${index}"
                         >
 
-                            <button
-                                type="button"
-                                class="music-select"
-                                data-index="${index}"
-                            >
+                            <span class="music-number">
+                                ${String(index + 1).padStart(2, '0')}
+                            </span>
 
-                                <span class="music-number">
-                                    ${String(
-                                        index + 1
-                                    ).padStart(
-                                        2,
-                                        '0'
-                                    )}
-                                </span>
+                            <span class="music-item-info">
 
-                                <span class="music-item-info">
+                                <strong>
+                                    ${esc(track.title)}
+                                </strong>
 
-                                    <strong>
-                                        ${esc(
-                                            track.title
-                                        )}
-                                    </strong>
+                                <small>
+                                    ${esc(owner)}
+                                </small>
 
-                                    <small>
-                                        ${esc(
-                                            owner
-                                        )}
-                                    </small>
+                            </span>
 
-                                </span>
+                            <span class="music-play">
+                                ${
+                                    index === audioIndex
+                                        ? 'Ⅱ'
+                                        : '▶'
+                                }
+                            </span>
 
-                                <span class="music-play">
-                                    ${
-                                        index === audioIndex
-                                            ? 'Ⅱ'
-                                            : '▶'
-                                    }
-                                </span>
-
-                            </button>
+                        </button>
 
 
-                            ${
-                                track.user_id === user.id
-                                    ? `
-                                        <button
-                                            type="button"
-                                            class="music-delete"
-                                            data-id="${esc(
-                                                track.id
-                                            )}"
-                                        >
-                                            ×
-                                        </button>
-                                    `
-                                    : ''
-                            }
+                        ${
+                            track.user_id === user.id
+                                ? `
+                                    <button
+                                        type="button"
+                                        class="music-delete"
+                                        data-id="${esc(track.id)}"
+                                    >
+                                        ×
+                                    </button>
+                                `
+                                : ''
+                        }
 
-                        </div>
-                    `;
+                    </div>
+                `;
 
-                }
-            )
+            })
             .join('');
 
 
-    list
-        .querySelectorAll(
-            '.music-select'
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    'click',
-                    () => {
-
-                        const index =
-                            Number(
-                                button.dataset.index
-                            );
-
-                        selectTrack(
-                            index
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+    /* =========================
+       SELECIONAR
+    ========================= */
 
     list
-        .querySelectorAll(
-            '.music-delete'
-        )
-        .forEach(
-            button => {
+        .querySelectorAll('.music-select')
+        .forEach(button => {
 
-                button.addEventListener(
-                    'click',
-                    () => {
+            button.addEventListener(
+                'click',
+                () => {
 
-                        deleteMusic(
-                            button.dataset.id
+                    const index =
+                        Number(
+                            button.dataset.index
                         );
 
-                    }
-                );
+                    selectTrack(index);
 
-            }
-        );
+                }
+            );
+
+        });
+
+
+    /* =========================
+       APAGAR
+    ========================= */
+
+    list
+        .querySelectorAll('.music-delete')
+        .forEach(button => {
+
+            button.addEventListener(
+                'click',
+                () => {
+
+                    deleteMusic(
+                        button.dataset.id
+                    );
+
+                }
+            );
+
+        });
 
 }
 
 
 /* =========================================
-   SELECCIONAR MÚSICA
+   SELECIONAR MÚSICA
 ========================================= */
 
 function selectTrack(index) {
@@ -3220,102 +3313,10 @@ function selectTrack(index) {
     if (!tracks[index]) return;
 
 
-    audioIndex =
-        index;
-
-
-    const track =
-        tracks[audioIndex];
-
-
-    const audio =
-        $('#audio');
-
-
-    if (!audio) return;
-
-
-    const source =
-        validUrl(
-            track.file_url
-        );
-
-
-    if (!source) {
-
-        console.error(
-            'URL de música inválido:',
-            track.file_url
-        );
-
-        return;
-    }
-
-
-    audio.src =
-        source;
-
-
-    audio.load();
-
-
-    if ($('#trackTitle')) {
-
-        $('#trackTitle')
-            .textContent =
-            track.title;
-
-    }
-
-
-    if ($('#trackArtist')) {
-
-        $('#trackArtist')
-            .textContent =
-            track.user_id === user.id
-                ? 'Adicionada por ti'
-                : 'Adicionada pela outra pessoa';
-
-    }
-
-
-    if ($('#musicName')) {
-
-        $('#musicName')
-            .textContent =
-            track.title;
-
-    }
-
-
-    renderMusicList();
-
-
-    audio
-        .play()
-        .then(
-            () => {
-
-                if ($('#play')) {
-
-                    $('#play')
-                        .textContent =
-                        'Ⅱ';
-
-                }
-
-            }
-        )
-        .catch(
-            error => {
-
-                console.warn(
-                    'Autoplay bloqueado:',
-                    error
-                );
-
-            }
-        );
+    setTrack(
+        index,
+        true
+    );
 
 }
 
@@ -3324,220 +3325,227 @@ function selectTrack(index) {
    PLAY / PAUSE
 ========================================= */
 
-$('#play')
-    ?.addEventListener(
-        'click',
-        async () => {
+$('#play')?.addEventListener(
+    'click',
+    async () => {
 
-            const audio =
-                $('#audio');
+        const audio = $('#audio');
 
 
-            if (
-                !audio ||
-                !audio.src
-            ) {
-                return;
-            }
+        if (
+            !audio ||
+            !audio.src
+        ) {
 
+            if (tracks.length) {
 
-            try {
-
-                if (audio.paused) {
-
-                    await audio.play();
-
-                    $('#play')
-                        .textContent =
-                        'Ⅱ';
-
-                } else {
-
-                    audio.pause();
-
-                    $('#play')
-                        .textContent =
-                        '▶';
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    'Erro no player:',
-                    error
+                setTrack(
+                    audioIndex,
+                    true
                 );
 
             }
 
+            return;
+
         }
-    );
+
+
+        try {
+
+            if (audio.paused) {
+
+                await audio.play();
+
+                $('#play').textContent =
+                    'Ⅱ';
+
+            } else {
+
+                audio.pause();
+
+                $('#play').textContent =
+                    '▶';
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                'Erro no player:',
+                error
+            );
+
+        }
+
+    }
+);
 
 
 /* =========================================
    PLAYER EVENTS
 ========================================= */
 
-$('#audio')
-    ?.addEventListener(
-        'play',
-        () => {
+$('#audio')?.addEventListener(
+    'play',
+    () => {
 
-            if ($('#play')) {
+        if ($('#play')) {
 
-                $('#play')
-                    .textContent =
-                    'Ⅱ';
-
-            }
+            $('#play').textContent =
+                'Ⅱ';
 
         }
-    );
+
+    }
+);
 
 
-$('#audio')
-    ?.addEventListener(
-        'pause',
-        () => {
+$('#audio')?.addEventListener(
+    'pause',
+    () => {
 
-            if ($('#play')) {
+        if ($('#play')) {
 
-                $('#play')
-                    .textContent =
-                    '▶';
-
-            }
+            $('#play').textContent =
+                '▶';
 
         }
-    );
+
+    }
+);
 
 
 /* =========================================
    ANTERIOR
 ========================================= */
 
-$('#prev')
-    ?.addEventListener(
-        'click',
-        () => {
+$('#prev')?.addEventListener(
+    'click',
+    () => {
 
-            if (!tracks.length) return;
-
-
-            audioIndex =
-                (
-                    audioIndex -
-                    1 +
-                    tracks.length
-                ) %
-                tracks.length;
+        if (!tracks.length) return;
 
 
-            selectTrack(
-                audioIndex
-            );
+        audioIndex =
+            (
+                audioIndex -
+                1 +
+                tracks.length
+            ) %
+            tracks.length;
 
-        }
-    );
+
+        selectTrack(
+            audioIndex
+        );
+
+    }
+);
 
 
 /* =========================================
    PRÓXIMA
 ========================================= */
 
-$('#next')
-    ?.addEventListener(
-        'click',
-        () => {
+$('#next')?.addEventListener(
+    'click',
+    () => {
 
-            if (!tracks.length) return;
-
-
-            audioIndex =
-                (
-                    audioIndex +
-                    1
-                ) %
-                tracks.length;
+        if (!tracks.length) return;
 
 
-            selectTrack(
-                audioIndex
-            );
+        audioIndex =
+            (
+                audioIndex +
+                1
+            ) %
+            tracks.length;
 
-        }
-    );
+
+        selectTrack(
+            audioIndex
+        );
+
+    }
+);
 
 
 /* =========================================
    MÚSICA TERMINOU
 ========================================= */
 
-$('#audio')
-    ?.addEventListener(
-        'ended',
-        () => {
+$('#audio')?.addEventListener(
+    'ended',
+    () => {
 
-            if (!tracks.length) return;
+        if (!tracks.length) return;
 
-            if ($('#next')) {
 
-                $('#next').click();
+        audioIndex =
+            (
+                audioIndex +
+                1
+            ) %
+            tracks.length;
 
-            }
 
-        }
-    );
+        selectTrack(
+            audioIndex
+        );
+
+    }
+);
 
 
 /* =========================================
    PROGRESSO
 ========================================= */
 
-$('#audio')
-    ?.addEventListener(
-        'timeupdate',
-        () => {
+$('#audio')?.addEventListener(
+    'timeupdate',
+    () => {
 
-            const audio =
-                $('#audio');
+        const audio =
+            $('#audio');
 
-            const progress =
-                $('#progress');
+        const progress =
+            $('#progress');
 
 
-            if (
-                !audio ||
-                !progress ||
-                !audio.duration ||
-                !Number.isFinite(
-                    audio.duration
-                )
-            ) {
+        if (
+            !audio ||
+            !progress ||
+            !audio.duration ||
+            !Number.isFinite(
+                audio.duration
+            )
+        ) {
 
-                if (progress) {
+            if (progress) {
 
-                    progress.style.width =
-                        '0%';
+                progress.style.width =
+                    '0%';
 
-                }
-
-                return;
             }
 
-
-            const percentage =
-                (
-                    audio.currentTime /
-                    audio.duration
-                ) * 100;
-
-
-            progress.style.width =
-                `${percentage}%`;
+            return;
 
         }
-    );
+
+
+        const percentage =
+            (
+                audio.currentTime /
+                audio.duration
+            ) * 100;
+
+
+        progress.style.width =
+            `${percentage}%`;
+
+    }
+);
 
 
 /* =========================================
@@ -3568,26 +3576,23 @@ async function deleteMusic(id) {
     if (!confirmed) return;
 
 
-    /* BD primeiro */
+    /* =========================
+       BD
+    ========================= */
 
     const {
         error: databaseError
     } = await sb
         .from('music')
         .delete()
-        .eq(
-            'id',
-            id
-        )
-        .eq(
-            'user_id',
-            user.id
-        );
+        .eq('id', id)
+        .eq('user_id', user.id);
 
 
     if (databaseError) {
 
         console.error(
+            'Erro ao apagar da BD:',
             databaseError
         );
 
@@ -3596,10 +3601,13 @@ async function deleteMusic(id) {
         );
 
         return;
+
     }
 
 
-    /* Storage */
+    /* =========================
+       STORAGE
+    ========================= */
 
     if (track.file_path) {
 
@@ -3624,6 +3632,10 @@ async function deleteMusic(id) {
     }
 
 
+    /* =========================
+       LIMPAR PLAYER
+    ========================= */
+
     const audio =
         $('#audio');
 
@@ -3632,17 +3644,14 @@ async function deleteMusic(id) {
 
         audio.pause();
 
-        audio.removeAttribute(
-            'src'
-        );
+        audio.removeAttribute('src');
 
         audio.load();
 
     }
 
 
-    audioIndex =
-        0;
+    audioIndex = 0;
 
 
     await loadMusic();
@@ -3676,7 +3685,9 @@ function subscribeRealtime() {
         !sb ||
         realtimeChannel
     ) {
+
         return;
+
     }
 
 
@@ -3692,7 +3703,9 @@ function subscribeRealtime() {
                     table: 'messages'
                 },
                 () => {
+
                     loadChat();
+
                 }
             )
 
@@ -3704,7 +3717,9 @@ function subscribeRealtime() {
                     table: 'references'
                 },
                 () => {
+
                     loadRefs();
+
                 }
             )
 
@@ -3716,7 +3731,9 @@ function subscribeRealtime() {
                     table: 'notes'
                 },
                 () => {
+
                     loadPersonal();
+
                 }
             )
 
@@ -3728,7 +3745,9 @@ function subscribeRealtime() {
                     table: 'books'
                 },
                 () => {
+
                     loadPersonal();
+
                 }
             )
 
@@ -3740,7 +3759,9 @@ function subscribeRealtime() {
                     table: 'tasks'
                 },
                 () => {
+
                     loadPersonal();
+
                 }
             )
 
@@ -3752,7 +3773,9 @@ function subscribeRealtime() {
                     table: 'music'
                 },
                 () => {
+
                     loadMusic();
+
                 }
             )
 
@@ -3768,7 +3791,6 @@ function subscribeRealtime() {
             );
 
 }
-
 
 /* =========================================
    TESTE SUPABASE
