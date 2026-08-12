@@ -1,83 +1,1087 @@
 <!doctype html>
 <html lang="pt-PT">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b0b0b">
-<title>TF — private space</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0b0b0b"
+  >
+
+  <title>TF — private space</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
 </head>
+
+
 <body>
-<section id="login" class="login-screen">
-  <div class="login-stars">✦ · ✦</div><div class="login-logo">TF</div>
-  <p class="login-line">between black and white,<br>we create.</p>
-  <div class="login-form">
-    <label class="field-label">Quem és?</label>
-    <select id="loginUser"><option value="LadyWhite">LadyWhite</option><option value="LadyBlack">LadyBlack</option></select>
-    <label class="field-label">Email</label><input id="loginEmail" type="email" placeholder="o teu email" autocomplete="email">
-    <label class="field-label">Passe</label>
-    <div class="password-wrap"><input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password"><button id="showPassword">◉</button></div>
-    <button id="loginBtn" class="enter-btn">ENTRAR</button>
-    <p id="loginError" class="error"></p>
+
+  <!-- =========================
+       LOGIN
+  ========================== -->
+
+  <section
+    id="login"
+    class="login-screen"
+  >
+
+    <div class="login-stars">
+      ✦ · ✦
+    </div>
+
+    <div class="login-logo">
+      TF
+    </div>
+
+    <p class="login-line">
+      between black and white,
+      <br>
+      we create.
+    </p>
+
+
+    <div class="login-form">
+
+      <label class="field-label">
+        Quem és?
+      </label>
+
+      <select id="loginUser">
+
+        <option value="LadyWhite">
+          LadyWhite
+        </option>
+
+        <option value="LadyBlack">
+          LadyBlack
+        </option>
+
+      </select>
+
+
+      <label class="field-label">
+        Email
+      </label>
+
+      <input
+        id="loginEmail"
+        type="email"
+        placeholder="o teu email"
+        autocomplete="email"
+      >
+
+
+      <label class="field-label">
+        Passe
+      </label>
+
+      <div class="password-wrap">
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        >
+
+        <button
+          id="showPassword"
+          type="button"
+        >
+          ◉
+        </button>
+
+      </div>
+
+
+      <button
+        id="loginBtn"
+        class="enter-btn"
+        type="button"
+      >
+        ENTRAR
+      </button>
+
+
+      <p
+        id="loginError"
+        class="error"
+      ></p>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- =========================
+       APP
+  ========================== -->
+
+  <div
+    id="app"
+    class="app hidden"
+  >
+
+
+    <!-- HEADER -->
+
+    <header class="app-header">
+
+      <button
+        id="menuBtn"
+        class="icon-btn"
+        type="button"
+      >
+        ☰
+      </button>
+
+      <div class="header-logo">
+        TF
+      </div>
+
+      <button
+        id="quickBtn"
+        class="icon-btn"
+        type="button"
+      >
+        ✦
+      </button>
+
+    </header>
+
+
+
+    <!-- MENU LATERAL -->
+
+    <aside
+      id="drawer"
+      class="drawer"
+    >
+
+      <div class="drawer-top">
+
+        <b>
+          TF
+        </b>
+
+        <button
+          id="closeDrawer"
+          class="icon-btn"
+          type="button"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="drawer-user">
+
+        <div
+          id="avatar"
+          class="avatar"
+        >
+          W
+        </div>
+
+        <div>
+
+          <strong id="drawerName">
+            LadyWhite
+          </strong>
+
+          <small>
+            private space
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <nav>
+
+        <button
+          data-page="home"
+          type="button"
+        >
+          ⌂
+          <span>
+            Início
+          </span>
+        </button>
+
+
+        <button
+          data-page="chat"
+          type="button"
+        >
+          ○
+          <span>
+            Chat
+          </span>
+
+          <b id="chatBadge">
+            0
+          </b>
+
+        </button>
+
+
+        <button
+          data-page="references"
+          type="button"
+        >
+          ▣
+          <span>
+            Referências
+          </span>
+        </button>
+
+
+        <button
+          data-page="personal"
+          type="button"
+        >
+          ♙
+          <span>
+            Meu Espaço
+          </span>
+        </button>
+
+      </nav>
+
+
+      <button
+        id="logoutBtn"
+        class="logout"
+        type="button"
+      >
+        Sair
+      </button>
+
+    </aside>
+
+
+    <!-- FUNDO DO MENU -->
+
+    <div
+      id="backdrop"
+      class="backdrop hidden"
+    ></div>
+
+
+
+    <!-- =========================
+         CONTEÚDO
+    ========================== -->
+
+    <main class="main">
+
+
+      <!-- INÍCIO -->
+
+      <section
+        id="home"
+        class="page active"
+      >
+
+        <div class="intro">
+
+          <span class="micro">
+            TF / PRIVATE SPACE
+          </span>
+
+          <h1>
+            Olá,
+            <br>
+
+            <em id="homeName">
+              LadyWhite
+            </em>
+
+            ✦
+          </h1>
+
+          <p>
+            O que vamos criar hoje?
+          </p>
+
+        </div>
+
+
+        <div class="home-grid">
+
+
+          <button
+            data-page="chat"
+            class="home-card"
+            type="button"
+          >
+
+            <span>
+              ○
+            </span>
+
+            <strong>
+              Chat
+            </strong>
+
+            <small>
+              falar entre nós
+            </small>
+
+          </button>
+
+
+
+          <button
+            data-page="references"
+            class="home-card"
+            type="button"
+          >
+
+            <span>
+              ♧
+            </span>
+
+            <strong>
+              Referências
+            </strong>
+
+            <small>
+              guardar inspirações
+            </small>
+
+          </button>
+
+
+
+          <button
+            data-page="personal"
+            class="home-card"
+            type="button"
+          >
+
+            <span>
+              ♙
+            </span>
+
+            <strong>
+              Meu Espaço
+            </strong>
+
+            <small>
+              só tu vês
+            </small>
+
+          </button>
+
+
+
+          <button
+            id="homeQuick"
+            class="home-card"
+            type="button"
+          >
+
+            <span>
+              ✦
+            </span>
+
+            <strong>
+              Nota rápida
+            </strong>
+
+            <small>
+              uma ideia solta
+            </small>
+
+          </button>
+
+
+        </div>
+
+
+        <div class="quote">
+
+          <p>
+            “Duas mentes,
+            <br>
+            um espaço,
+            <br>
+            infinitas possibilidades.
+          </p>
+
+          <i>
+            ✦
+          </i>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =========================
+           CHAT
+      ========================== -->
+
+      <section
+        id="chat"
+        class="page"
+      >
+
+        <div class="page-head">
+
+          <button
+            data-page="home"
+            type="button"
+          >
+            ‹
+          </button>
+
+          <h2>
+            Chat
+          </h2>
+
+          <button
+            type="button"
+          >
+            ✦
+          </button>
+
+        </div>
+
+
+        <div
+          id="messages"
+          class="messages"
+        ></div>
+
+
+        <form
+          id="chatForm"
+          class="message-form"
+        >
+
+          <input
+            id="messageInput"
+            maxlength="1000"
+            placeholder="Escreve uma mensagem..."
+            autocomplete="off"
+          >
+
+          <button type="submit">
+            ➤
+          </button>
+
+        </form>
+
+      </section>
+
+
+
+      <!-- =========================
+           REFERÊNCIAS
+      ========================== -->
+
+      <section
+        id="references"
+        class="page"
+      >
+
+        <div class="page-head">
+
+          <button
+            data-page="home"
+            type="button"
+          >
+            ‹
+          </button>
+
+          <h2>
+            Referências
+          </h2>
+
+          <button
+            type="button"
+          >
+            ✦
+          </button>
+
+        </div>
+
+
+        <div class="filters">
+
+          <button
+            class="active"
+            type="button"
+          >
+            Todas
+          </button>
+
+          <button type="button">
+            Imagens
+          </button>
+
+          <button type="button">
+            Links
+          </button>
+
+        </div>
+
+
+        <div
+          id="referenceGrid"
+          class="reference-grid"
+        ></div>
+
+
+        <button
+          id="newReference"
+          class="floating"
+          type="button"
+        >
+          +
+        </button>
+
+      </section>
+
+
+
+      <!-- =========================
+           ESPAÇO PESSOAL
+      ========================== -->
+
+      <section
+        id="personal"
+        class="page"
+      >
+
+        <div class="page-head">
+
+          <button
+            data-page="home"
+            type="button"
+          >
+            ‹
+          </button>
+
+          <h2>
+            Meu Espaço
+          </h2>
+
+          <button
+            type="button"
+          >
+            ✦
+          </button>
+
+        </div>
+
+
+        <div class="private-label">
+          ♙ Só tu tens acesso a este espaço.
+        </div>
+
+
+        <!-- TABS -->
+
+        <div class="tabs">
+
+          <button
+            class="active"
+            data-tab="notes"
+            type="button"
+          >
+            ▢
+            <small>
+              Notas
+            </small>
+          </button>
+
+
+          <button
+            data-tab="books"
+            type="button"
+          >
+            ▤
+            <small>
+              Livros
+            </small>
+          </button>
+
+
+          <button
+            data-tab="tasks"
+            type="button"
+          >
+            ☑
+            <small>
+              Tarefas
+            </small>
+          </button>
+
+
+          <button
+            data-tab="music"
+            type="button"
+          >
+            ♫
+            <small>
+              Música
+            </small>
+          </button>
+
+        </div>
+
+
+
+        <!-- NOTAS -->
+
+        <div
+          id="tab-notes"
+          class="panel active"
+        >
+
+          <span class="micro">
+            PRIVATE
+          </span>
+
+          <h3>
+            Bloco de notas
+          </h3>
+
+          <textarea
+            id="notes"
+            placeholder="Escreve aqui..."
+          ></textarea>
+
+          <small class="autosave">
+            Guardado automaticamente
+          </small>
+
+        </div>
+
+
+
+        <!-- LIVROS -->
+
+        <div
+          id="tab-books"
+          class="panel"
+        >
+
+          <div class="panel-title">
+
+            <div>
+
+              <span class="micro">
+                PRIVATE
+              </span>
+
+              <h3>
+                Livros
+              </h3>
+
+            </div>
+
+            <button
+              id="addBook"
+              class="plus"
+              type="button"
+            >
+              +
+            </button>
+
+          </div>
+
+
+          <div class="book-tabs">
+
+            <button
+              class="active"
+              data-list="to_read"
+              type="button"
+            >
+              Quero ler
+            </button>
+
+            <button
+              data-list="reading"
+              type="button"
+            >
+              A ler
+            </button>
+
+            <button
+              data-list="read"
+              type="button"
+            >
+              Lidos
+            </button>
+
+          </div>
+
+
+          <div id="bookList"></div>
+
+        </div>
+
+
+
+        <!-- TAREFAS -->
+
+        <div
+          id="tab-tasks"
+          class="panel"
+        >
+
+          <div class="panel-title">
+
+            <div>
+
+              <span class="micro">
+                PRIVATE
+              </span>
+
+              <h3>
+                Tarefas
+              </h3>
+
+            </div>
+
+            <button
+              id="addTask"
+              class="plus"
+              type="button"
+            >
+              +
+            </button>
+
+          </div>
+
+
+          <div id="taskList"></div>
+
+        </div>
+
+
+
+        <!-- MÚSICA -->
+
+        <div
+          id="tab-music"
+          class="panel"
+        >
+
+          <span class="micro">
+            PRIVATE
+          </span>
+
+          <h3>
+            A minha música
+          </h3>
+
+
+          <div class="music-cover">
+            ♫
+          </div>
+
+
+          <p id="musicName">
+            O player funciona em todas as páginas.
+          </p>
+
+
+          <input
+            id="audioFiles"
+            hidden
+            type="file"
+            accept="audio/*"
+            multiple
+          >
+
+
+          <button
+            id="addMusic"
+            class="upload"
+            type="button"
+          >
+            + Adicionar música
+          </button>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =========================
+           NOTA RÁPIDA
+      ========================== -->
+
+      <section
+        id="quick"
+        class="page"
+      >
+
+        <div class="page-head">
+
+          <button
+            data-page="home"
+            type="button"
+          >
+            ‹
+          </button>
+
+          <h2>
+            Nota rápida
+          </h2>
+
+          <button
+            type="button"
+          >
+            ✦
+          </button>
+
+        </div>
+
+
+        <div class="panel quick">
+
+          <span class="micro">
+            PRIVATE NOTE
+          </span>
+
+
+          <textarea
+            id="quickText"
+            placeholder="Uma ideia..."
+          ></textarea>
+
+
+          <button
+            id="saveQuick"
+            class="black-btn"
+            type="button"
+          >
+            Guardar
+          </button>
+
+        </div>
+
+      </section>
+
+    </main>
+
+
+
+    <!-- =========================
+         PLAYER DE MÚSICA
+    ========================== -->
+
+    <div class="music-bar">
+
+      <div class="thumb">
+        ♫
+      </div>
+
+
+      <div class="music-meta">
+
+        <b id="trackTitle">
+          TF playlist
+        </b>
+
+        <small id="trackArtist">
+          Escolhe música
+        </small>
+
+      </div>
+
+
+      <button
+        id="prev"
+        type="button"
+      >
+        ‹
+      </button>
+
+
+      <button
+        id="play"
+        type="button"
+      >
+        ▶
+      </button>
+
+
+      <button
+        id="next"
+        type="button"
+      >
+        ›
+      </button>
+
+
+      <div class="progress">
+        <i id="progress"></i>
+      </div>
+
+
+      <audio
+        id="audio"
+      ></audio>
+
+    </div>
+
   </div>
-</section>
 
-<div id="app" class="app hidden">
-<header class="app-header"><button id="menuBtn" class="icon-btn">☰</button><div class="header-logo">TF</div><button id="quickBtn" class="icon-btn">✦</button></header>
-<aside id="drawer" class="drawer">
-  <div class="drawer-top"><b>TF</b><button id="closeDrawer" class="icon-btn">×</button></div>
-  <div class="drawer-user"><div id="avatar" class="avatar">W</div><div><strong id="drawerName">LadyWhite</strong><small>private space</small></div></div>
-  <nav>
-    <button data-page="home">⌂ <span>Início</span></button>
-    <button data-page="chat">○ <span>Chat</span><b id="chatBadge">0</b></button>
-    <button data-page="references">▣ <span>Referências</span></button>
-    <button data-page="personal">♙ <span>Meu Espaço</span></button>
-  </nav>
-  <button id="logoutBtn" class="logout">Sair</button>
-</aside><div id="backdrop" class="backdrop hidden"></div>
 
-<main class="main">
-<section id="home" class="page active">
-  <div class="intro"><span class="micro">TF / PRIVATE SPACE</span><h1>Olá,<br><em id="homeName">LadyWhite</em> ✦</h1><p>O que vamos criar hoje?</p></div>
-  <div class="home-grid">
-    <button data-page="chat" class="home-card"><span>○</span><strong>Chat</strong><small>falar entre nós</small></button>
-    <button data-page="references" class="home-card"><span>♧</span><strong>Referências</strong><small>guardar inspirações</small></button>
-    <button data-page="personal" class="home-card"><span>♙</span><strong>Meu Espaço</strong><small>só tu vês</small></button>
-    <button id="homeQuick" class="home-card"><span>✦</span><strong>Nota rápida</strong><small>uma ideia solta</small></button>
+
+  <!-- =========================
+       MODAL — REFERÊNCIA
+  ========================== -->
+
+  <div
+    id="refModal"
+    class="modal hidden"
+  >
+
+    <div class="sheet">
+
+      <button
+        class="close"
+        data-close="refModal"
+        type="button"
+      >
+        ×
+      </button>
+
+
+      <span class="micro">
+        NEW REFERENCE
+      </span>
+
+
+      <h2>
+        Guardar referência
+      </h2>
+
+
+      <form id="refForm">
+
+        <input
+          id="refTitle"
+          required
+          placeholder="Título"
+        >
+
+
+        <input
+          id="refImage"
+          placeholder="URL da imagem"
+        >
+
+
+        <input
+          id="refLink"
+          placeholder="Link"
+        >
+
+
+        <textarea
+          id="refNote"
+          placeholder="Nota..."
+        ></textarea>
+
+
+        <button
+          class="black-btn"
+          type="submit"
+        >
+          Guardar
+        </button>
+
+      </form>
+
+    </div>
+
   </div>
-  <div class="quote">“<p>Duas mentes,<br>um espaço,<br>infinitas possibilidades.</p><i>✦</i></div>
-</section>
 
-<section id="chat" class="page">
-  <div class="page-head"><button data-page="home">‹</button><h2>Chat</h2><button>✦</button></div>
-  <div id="messages" class="messages"></div>
-  <form id="chatForm" class="message-form"><input id="messageInput" maxlength="1000" placeholder="Escreve uma mensagem..." autocomplete="off"><button>➤</button></form>
-</section>
 
-<section id="references" class="page">
-  <div class="page-head"><button data-page="home">‹</button><h2>Referências</h2><button>✦</button></div>
-  <div class="filters"><button class="active">Todas</button><button>Imagens</button><button>Links</button></div>
-  <div id="referenceGrid" class="reference-grid"></div><button id="newReference" class="floating">+</button>
-</section>
 
-<section id="personal" class="page">
-  <div class="page-head"><button data-page="home">‹</button><h2>Meu Espaço</h2><button>✦</button></div>
-  <div class="private-label">♙ Só tu tens acesso a este espaço.</div>
-  <div class="tabs"><button class="active" data-tab="notes">▢<small>Notas</small></button><button data-tab="books">▤<small>Livros</small></button><button data-tab="tasks">☑<small>Tarefas</small></button><button data-tab="music">♫<small>Música</small></button></div>
-  <div id="tab-notes" class="panel active"><span class="micro">PRIVATE</span><h3>Bloco de notas</h3><textarea id="notes" placeholder="Escreve aqui..."></textarea><small class="autosave">Guardado automaticamente</small></div>
-  <div id="tab-books" class="panel"><div class="panel-title"><div><span class="micro">PRIVATE</span><h3>Livros</h3></div><button id="addBook" class="plus">+</button></div><div class="book-tabs"><button class="active" data-list="to_read">Quero ler</button><button data-list="reading">A ler</button><button data-list="read">Lidos</button></div><div id="bookList"></div></div>
-  <div id="tab-tasks" class="panel"><div class="panel-title"><div><span class="micro">PRIVATE</span><h3>Tarefas</h3></div><button id="addTask" class="plus">+</button></div><div id="taskList"></div></div>
-  <div id="tab-music" class="panel"><span class="micro">PRIVATE</span><h3>A minha música</h3><div class="music-cover">♫</div><p id="musicName">O player funciona em todas as páginas.</p><input id="audioFiles" hidden type="file" accept="audio/*" multiple><button id="addMusic" class="upload">+ Adicionar música</button></div>
-</section>
+  <!-- =========================
+       MODAL — LIVROS / TAREFAS
+  ========================== -->
 
-<section id="quick" class="page"><div class="page-head"><button data-page="home">‹</button><h2>Nota rápida</h2><button>✦</button></div><div class="panel quick"><span class="micro">PRIVATE NOTE</span><textarea id="quickText" placeholder="Uma ideia..."></textarea><button id="saveQuick" class="black-btn">Guardar</button></div></section>
-</main>
+  <div
+    id="inputModal"
+    class="modal hidden"
+  >
 
-<div class="music-bar"><div class="thumb">♫</div><div class="music-meta"><b id="trackTitle">TF playlist</b><small id="trackArtist">Escolhe música</small></div><button id="prev">‹</button><button id="play">▶</button><button id="next">›</button><div class="progress"><i id="progress"></i></div><audio id="audio"></audio></div>
-</div>
+    <div class="sheet">
 
-<div id="refModal" class="modal hidden"><div class="sheet"><button class="close" data-close="refModal">×</button><span class="micro">NEW REFERENCE</span><h2>Guardar referência</h2><form id="refForm"><input id="refTitle" required placeholder="Título"><input id="refImage" placeholder="URL da imagem"><input id="refLink" placeholder="Link"><textarea id="refNote" placeholder="Nota..."></textarea><button class="black-btn">Guardar</button></form></div></div>
-<div id="inputModal" class="modal hidden"><div class="sheet"><button class="close" data-close="inputModal">×</button><span class="micro">PRIVATE</span><h2 id="inputTitle">Adicionar</h2><input id="inputValue" placeholder=""><button id="inputSave" class="black-btn">Guardar</button></div></div>
-<script src="script.js"></script>
-</body></html>
+      <button
+        class="close"
+        data-close="inputModal"
+        type="button"
+      >
+        ×
+      </button>
+
+
+      <span class="micro">
+        PRIVATE
+      </span>
+
+
+      <h2 id="inputTitle">
+        Adicionar
+      </h2>
+
+
+      <input
+        id="inputValue"
+        placeholder=""
+      >
+
+
+      <button
+        id="inputSave"
+        class="black-btn"
+        type="button"
+      >
+        Guardar
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- JAVASCRIPT -->
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
