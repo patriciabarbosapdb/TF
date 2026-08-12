@@ -318,3 +318,66 @@ exception
   when duplicate_object then null;
 
 end $$;
+
+-- ==========================================
+-- MUSIC
+-- ==========================================
+
+create table if not exists public.music (
+  id uuid primary key default gen_random_uuid(),
+
+  user_id uuid not null
+    references auth.users(id)
+    on delete cascade,
+
+  title text not null,
+
+  file_path text not null,
+
+  file_url text not null,
+
+  created_at timestamptz not null default now()
+);
+
+
+alter table public.music enable row level security;
+
+
+-- As duas pessoas podem ver as músicas
+create policy "music read authenticated"
+on public.music
+for select
+to authenticated
+using (true);
+
+
+-- Cada pessoa pode adicionar músicas
+create policy "music insert own"
+on public.music
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+
+-- Cada pessoa pode apagar as suas músicas
+create policy "music delete own"
+on public.music
+for delete
+to authenticated
+using (user_id = auth.uid());
+
+
+-- Realtime
+alter table public.music replica identity full;
+
+
+do $$
+begin
+
+  alter publication supabase_realtime
+  add table public.music;
+
+exception
+  when duplicate_object then null;
+
+end $$;
