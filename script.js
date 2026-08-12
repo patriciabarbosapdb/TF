@@ -437,16 +437,16 @@ $('#logoutBtn')?.addEventListener('click', () => {
 });
 
 
-    $("#forgotPassword")?.addEventListener(
-  "click",
+    $('#forgotPassword')?.addEventListener(
+  'click',
   async () => {
 
     const email =
-      $("#loginEmail").value.trim();
+      $('#loginEmail')?.value.trim();
 
     if (!email) {
       showError(
-        "Escolhe uma pessoa ou escreve o email."
+        'Escolhe uma pessoa ou escreve o email.'
       );
       return;
     }
@@ -456,23 +456,25 @@ $('#logoutBtn')?.addEventListener('click', () => {
         email,
         {
           redirectTo:
-            "https://patriciabarbosapdb.github.io/TF/"
+            'https://patriciabarbosapdb.github.io/TF/'
         }
       );
 
     if (error) {
-
-      console.error(error);
+      console.error(
+        'Erro ao pedir recuperação:',
+        error
+      );
 
       showError(
-        "Não foi possível enviar o email."
+        'Não foi possível enviar o email.'
       );
 
       return;
     }
 
     showError(
-      "Enviámos um email para redefinir o passe."
+      'Enviámos um email para redefinir o passe.'
     );
   }
 );
