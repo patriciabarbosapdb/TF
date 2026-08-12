@@ -224,6 +224,46 @@ $('#logoutBtn')?.addEventListener('click', () => {
   Esqueci-me do passe
 </button>
 
+    $("#forgotPassword")?.addEventListener(
+  "click",
+  async () => {
+
+    const email =
+      $("#loginEmail").value.trim();
+
+    if (!email) {
+      showError(
+        "Escolhe uma pessoa ou escreve o email."
+      );
+      return;
+    }
+
+    const { error } =
+      await sb.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo:
+            "https://patriciabarbosapdb.github.io/TF/"
+        }
+      );
+
+    if (error) {
+
+      console.error(error);
+
+      showError(
+        "Não foi possível enviar o email."
+      );
+
+      return;
+    }
+
+    showError(
+      "Enviámos um email para redefinir o passe."
+    );
+  }
+);
+
 /* NAVEGAÇÃO */
 
 function go(page) {
