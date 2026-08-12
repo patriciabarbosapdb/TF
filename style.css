@@ -750,31 +750,36 @@ select {
 }
 
 .floating {
-  position: fixed;
-
+  position: absolute;
   right: 18px;
-
-  bottom: 88px;
+  bottom: 20px;
 
   width: 52px;
   height: 52px;
 
   border: 0;
-
   border-radius: 50%;
 
   background: #111;
-
   color: #fff;
 
   font-size: 27px;
 
+  display: grid;
+  place-items: center;
+
   z-index: 10;
 
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 25px rgba(0,0,0,.15);
 }
 
+.floating:active {
+  transform: scale(.94);
+}
 
+#references {
+  position: relative;
+}
 /* =========================
    PERSONAL
 ========================= */
@@ -1197,74 +1202,257 @@ select {
   font-size: 25px;
 }
 
+/* =========================================
+   MOBILE
+========================================= */
 
-/* =========================
-   MOBILE ONLY
-========================= */
+@media (max-width: 767px) {
 
-@media (max-width: 479px) {
+    body {
+        width: 100%;
+        overflow-x: hidden;
+    }
 
-  body {
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  .app {
-    width: 100%;
-  }
+    .app {
+        width: 100%;
+        min-height: 100svh;
+    }
 
 }
 
 
-/* =========================
-   TABLET / DESKTOP PREVIEW
-   Mantém o site com aspecto mobile
-========================= */
+/* =========================================
+   TABLET
+========================================= */
 
-@media (min-width: 480px) {
+@media (min-width: 768px) and (max-width: 1023px) {
 
-  body {
-    background: #ddd;
-  }
+    body {
+        background: #e5e5e3;
+    }
 
-  .app {
-    width: 100%;
-    max-width: 480px;
+    .app {
+        width: 100%;
+        max-width: 900px;
+        min-height: 100svh;
 
-    margin: 0 auto;
+        margin: 0 auto;
 
-    min-height: 100svh;
+        background: #fafaf8;
 
-    box-shadow:
-      0 0 40px rgba(0, 0, 0, 0.12);
-  }
+        box-shadow:
+            0 0 40px rgba(0, 0, 0, .08);
+    }
 
-  .app-header {
-    max-width: 480px;
+}
 
-    margin: 0 auto;
-  }
 
-  .music-bar {
-    left: 50%;
-    right: auto;
+/* =========================================
+   DESKTOP
+========================================= */
 
-    transform: translateX(-50%);
+@media (min-width: 1024px) {
 
-    width: 480px;
+    body {
+        background: #e5e5e3;
+    }
 
-    max-width: 100%;
-  }
+    .app {
+        width: 100%;
+        max-width: 1180px;
+        min-height: 100vh;
 
-  .message-form {
-    left: 50%;
-    right: auto;
+        margin: 0 auto;
 
-    transform: translateX(-50%);
+        background: #fafaf8;
 
-    width: 480px;
+        box-shadow:
+            0 0 50px rgba(0, 0, 0, .08);
+    }
 
-    max-width: 100%;
-  }
+
+    /* HEADER */
+
+    .app-header {
+        height: 72px;
+        padding: 0 32px;
+    }
+
+    .header-logo {
+        font-size: 36px;
+    }
+
+
+    /* HOME */
+
+    .intro {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 70px 40px 35px;
+    }
+
+    .intro h1 {
+        font-size: 64px;
+    }
+
+
+    .home-grid {
+        max-width: 1000px;
+        margin: 0 auto;
+
+        grid-template-columns:
+            repeat(4, 1fr);
+
+        gap: 14px;
+
+        padding: 15px 40px;
+    }
+
+    .home-card {
+        min-height: 190px;
+    }
+
+    .quote {
+        max-width: 1000px;
+        margin: 25px auto;
+
+        min-height: 220px;
+        padding: 40px;
+    }
+
+
+    /* REFERÊNCIAS */
+
+    #references {
+        position: relative;
+    }
+
+    .filters {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px 40px;
+    }
+
+    .reference-grid {
+        max-width: 1000px;
+        margin: 0 auto;
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
+        gap: 15px;
+
+        padding: 0 40px 100px;
+    }
+
+    .ref-image {
+        height: 220px;
+    }
+
+
+    /* BOTÃO + */
+
+    #references .floating {
+        position: fixed;
+
+        right: 35px;
+        bottom: 35px;
+
+        width: 54px;
+        height: 54px;
+    }
+
+
+    /* CHAT */
+
+    .messages {
+        max-width: 850px;
+        margin: 0 auto;
+
+        padding:
+            30px
+            30px
+            120px;
+    }
+
+    .message-form {
+        left: 50%;
+        right: auto;
+
+        transform:
+            translateX(-50%);
+
+        width: min(
+            850px,
+            calc(100% - 60px)
+        );
+
+        bottom: 20px;
+
+        border: 1px solid #ddd;
+        border-radius: 15px;
+
+        box-shadow:
+            0 10px 35px
+            rgba(0,0,0,.12);
+    }
+
+
+    /* MEU ESPAÇO */
+
+    .private-label,
+    .tabs,
+    .panel {
+        max-width: 900px;
+
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .private-label {
+        padding:
+            20px 40px;
+    }
+
+    .panel {
+        min-height: 450px;
+        padding: 25px;
+    }
+
+
+    /* MÚSICA */
+
+    .music-bar {
+        left: 50%;
+        right: auto;
+
+        transform:
+            translateX(-50%);
+
+        width: min(
+            850px,
+            calc(100% - 60px)
+        );
+
+        bottom: 20px;
+
+        border-radius: 15px;
+
+        box-shadow:
+            0 10px 35px
+            rgba(0,0,0,.25);
+    }
+
+
+    /* MODAIS */
+
+    .modal {
+        align-items: center;
+    }
+
+    .sheet {
+        width: 500px;
+        border-radius: 20px;
+    }
 
 }
