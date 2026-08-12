@@ -216,7 +216,13 @@ async function login() {
 $('#logoutBtn')?.addEventListener('click', () => {
   sb.auth.signOut();
 });
-
+<button
+  type="button"
+  id="forgotPassword"
+  class="forgot-password"
+>
+  Esqueci-me do passe
+</button>
 
 /* NAVEGAÇÃO */
 
