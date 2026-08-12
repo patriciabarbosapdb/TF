@@ -173,23 +173,49 @@ if (loginUser) {
     input.value = LOGIN_EMAILS[loginUser.value] || '';
   }
 }
+/* =========================================
+   MOSTRAR / ESCONDER PASSE
+========================================= */
 
-$('#showPassword')?.addEventListener('click', () => {
-  const input = $('#loginPassword');
+const $ = selector =>
+  document.querySelector(selector);
 
-  if (input) {
-    input.type =
-      input.type === 'password'
-        ? 'text'
-        : 'password';
+
+$('#showPassword')?.addEventListener(
+  'click',
+  () => {
+
+    const input =
+      $('#loginPassword');
+
+    if (!input) return;
+
+    if (input.type === 'password') {
+
+      input.type = 'text';
+
+    } else {
+
+      input.type = 'password';
+
+    }
+
   }
-});
+);
 
-$('#loginPassword')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    login();
+
+/* ENTER NO CAMPO DA PASSWORD */
+
+$('#loginPassword')?.addEventListener(
+  'keydown',
+  e => {
+
+    if (e.key === 'Enter') {
+      login();
+    }
+
   }
-});
+);
 
 $('#loginBtn')?.addEventListener('click', login);
 
