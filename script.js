@@ -1,120 +1,1272 @@
-/* TF — Supabase version
-   1) Put your Supabase Project URL and anon/publishable key below.
-   2) Create two Auth users in Supabase Dashboard.
-   3) Put their emails in LOGIN_EMAILS.
-*/
+/* TF — Supabase version */
+
 const SUPABASE_URL = 'https://yyyxhrnessxvhtcjuvwh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_PmwWN4Wcke2RxuKuRUf_6Q_9O3W3nxt';
 
 const LOGIN_EMAILS = {
-  LadyWhite: "patriciaduartebarbosa9@gmail.com",
-  LadyBlack: "monicaduartebarbosa@gmail.com"
+  LadyWhite: 'patriciaduartebarbosa9@gmail.com',
+  LadyBlack: 'monicaduartebarbosa@gmail.com'
 };
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let user=null, profile=null, activeTab="notes", bookStatus="to_read", audioTracks=[], audioIndex=0;
 
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const esc=s=>(s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-const url=s=>/^https?:\/\//i.test(s||"")?s:"";
+let user = null;
+let profile = null;
+let activeTab = 'notes';
+let bookStatus = 'to_read';
+let audioTracks = [];
+let audioIndex = 0;
+let realtimeChannel = null;
 
-function showError(msg){$("#loginError").textContent=msg}
-async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){user=session.user; await loadProfile(); showApp()}
-  sb.auth.onAuthStateChange(async(_event,session)=>{
-    if(session){user=session.user; await loadProfile(); showApp()}
-    else {user=null; profile=null; $("#app").classList.add("hidden");$("#login").classList.remove("hidden")}
-  });
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#039;'
+}[c]));
+
+const url = s => /^https?:\/\//i.test(s || '') ? s : '';
+
+function showError(msg) {
+  const el = $('#loginError');
+  if (el) el.textContent = msg;
 }
-async function loadProfile(){
-  let {data:p,error}=await sb.from("profiles").select("*").eq("id",user.id).maybeSingle();
-  if(error){showError(error.message);return}
-  if(!p){
-    const username=Object.keys(LOGIN_EMAILS).find(k=>LOGIN_EMAILS[k].toLowerCase()===user.email.toLowerCase());
-    if(username){
-      const r=await sb.from("profiles").insert({id:user.id,username}).select().single();
-      if(!r.error)p=r.data;
+
+async function boot() {
+  if (!window.supabase) {
+    showError('A biblioteca do Supabase não foi carregada.');
+    return;
+  }
+
+  const { data, error } = await sb.auth.getSession();
+
+  if (error) {
+    console.error(error);
+    showError('Não foi possível iniciar a sessão.');
+    return;
+  }
+
+  if (data.session) {
+    user = data.session.user;
+    await loadProfile();
+
+    if (profile) {
+      showApp();
     }
   }
-  profile=p;
-}
-function showApp(){
-  if(!profile){showError("Esta conta não está autorizada no TF.");return}
-  $("#login").classList.add("hidden");$("#app").classList.remove("hidden");
-  $("#homeName").textContent=profile.username;$("#drawerName").textContent=profile.username;$("#avatar").textContent=profile.username==="LadyWhite"?"W":"B";
-  loadAll();subscribeRealtime();
-}
-$("#loginUser").onchange=e=>{$("#loginEmail").value=LOGIN_EMAILS[e.target.value]||""};
-$("#loginEmail").value=LOGIN_EMAILS[$("#loginUser").value]||"";
-$("#showPassword").onclick=()=>$("#loginPassword").type=$("#loginPassword").type==="password"?"text":"password";
-$("#loginPassword").onkeydown=e=>{if(e.key==="Enter")login()};
-$("#loginBtn").onclick=login;
-async function login(){
-  const email=$("#loginEmail").value.trim(),password=$("#loginPassword").value;
-  if(!email||!password)return showError("Preenche o email e o passe.");
-  const {error}=await sb.auth.signInWithPassword({email,password});
-  if(error)showError("Email ou passe incorrecto.");
-}
-$("#logoutBtn").onclick=()=>sb.auth.signOut();
 
-function go(page){$$(".page").forEach(p=>p.classList.remove("active"));$("#"+page).classList.add("active");closeDrawer();if(page==="chat")loadChat();if(page==="references")loadRefs();if(page==="personal")loadPersonal();window.scrollTo(0,0)}
-$$("[data-page]").forEach(b=>b.onclick=()=>go(b.dataset.page));
-$("#menuBtn").onclick=()=>{$("#drawer").classList.add("open");$("#backdrop").classList.remove("hidden")};
-$("#closeDrawer").onclick=closeDrawer;$("#backdrop").onclick=closeDrawer;
-function closeDrawer(){$("#drawer").classList.remove("open");$("#backdrop").classList.add("hidden")}
-$("#quickBtn").onclick=$("#homeQuick").onclick=()=>go("quick");
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session) {
+      user = session.user;
+      await loadProfile();
 
-async function loadChat(){
- const {data,error}=await sb.from("messages").select("id,body,created_at,user_id").order("created_at",{ascending:true}).limit(300);
- if(error)return;
- const ids=[...new Set(data.map(x=>x.user_id))];let names={};if(ids.length){const r=await sb.from("profiles").select("id,username").in("id",ids);(r.data||[]).forEach(x=>names[x.id]=x.username)}
- $("#messages").innerHTML=data.map(m=>`<div class="message ${m.user_id===user.id?"me":""}"><small>${esc(names[m.user_id]||"TF")} · ${new Date(m.created_at).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})}</small><div class="bubble">${esc(m.body).replace(/\n/g,"<br>")}</div></div>`).join("");
- $("#chatBadge").textContent="";
+      if (profile) {
+        showApp();
+      }
+    } else {
+      user = null;
+      profile = null;
+
+      $('#app')?.classList.add('hidden');
+      $('#login')?.classList.remove('hidden');
+    }
+  });
 }
-$("#chatForm").onsubmit=async e=>{e.preventDefault();const input=$("#messageInput"),body=input.value.trim();if(!body)return;input.disabled=true;const {error}=await sb.from("messages").insert({user_id:user.id,body});input.disabled=false;if(!error)input.value=""};
 
-async function loadRefs(){
- const {data}=await sb.from("references").select("*").order("created_at",{ascending:false});
- $("#referenceGrid").innerHTML=(data||[]).map((r,i)=>`<article class="reference"><div class="ref-image" ${r.image_url?`style="background-image:url('${esc(url(r.image_url))}')"`:""}>${r.image_url?"":"✦"}</div><div class="ref-body"><span class="micro">REF ${String(i+1).padStart(2,"0")}</span><h3>${esc(r.title)}</h3><p>${esc(r.note||"")}</p>${r.link_url?`<a target="_blank" rel="noopener" href="${esc(url(r.link_url))}">Abrir ↗</a>`:""}</div></article>`).join("")||"<p style='padding:16px;color:#888;font-size:11px'>Ainda não existem referências.</p>";
+async function loadProfile() {
+  if (!user) return;
+
+  const { data: p, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    showError(error.message);
+    return;
+  }
+
+  if (p) {
+    profile = p;
+    return;
+  }
+
+  const username = Object.keys(LOGIN_EMAILS).find(
+    k => LOGIN_EMAILS[k].toLowerCase() === user.email?.toLowerCase()
+  );
+
+  if (!username) {
+    profile = null;
+    return;
+  }
+
+  const { data: created, error: insertError } = await sb
+    .from('profiles')
+    .insert({
+      id: user.id,
+      username
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error(insertError);
+    showError('Não foi possível criar o perfil.');
+    return;
+  }
+
+  profile = created;
 }
-$("#newReference").onclick=()=>$("#refModal").classList.remove("hidden");
-$$("[data-close]").forEach(b=>b.onclick=()=>$("#"+b.dataset.close).classList.add("hidden"));
-$("#refForm").onsubmit=async e=>{e.preventDefault();const payload={user_id:user.id,title:$("#refTitle").value.trim(),image_url:$("#refImage").value.trim()||null,link_url:$("#refLink").value.trim()||null,note:$("#refNote").value.trim()||null};const {error}=await sb.from("references").insert(payload);if(error)return alert("Não foi possível guardar.");e.target.reset();$("#refModal").classList.add("hidden");loadRefs()};
 
-$$("[data-tab]").forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===activeTab));$$(".panel").forEach(x=>x.classList.remove("active"));$("#tab-"+activeTab).classList.add("active");if(activeTab==="books"||activeTab==="tasks")loadPersonal()});
-$("#notes").oninput=()=>saveNotesDebounced();
+function showApp() {
+  if (!profile) {
+    showError('Esta conta não está autorizada no TF.');
+    return;
+  }
+
+  $('#login')?.classList.add('hidden');
+  $('#app')?.classList.remove('hidden');
+
+  const name = profile.username;
+
+  if ($('#homeName')) {
+    $('#homeName').textContent = name;
+  }
+
+  if ($('#drawerName')) {
+    $('#drawerName').textContent = name;
+  }
+
+  const avatar = $('#avatar') || $('#drawerAvatar');
+
+  if (avatar) {
+    avatar.textContent = name === 'LadyWhite' ? 'W' : 'B';
+  }
+
+  loadAll();
+  subscribeRealtime();
+}
+
+
+/* LOGIN */
+
+const loginUser = $('#loginUser');
+
+if (loginUser) {
+  loginUser.addEventListener('change', e => {
+    const input = $('#loginEmail');
+
+    if (input) {
+      input.value = LOGIN_EMAILS[e.target.value] || '';
+    }
+  });
+
+  const input = $('#loginEmail');
+
+  if (input) {
+    input.value = LOGIN_EMAILS[loginUser.value] || '';
+  }
+}
+
+$('#showPassword')?.addEventListener('click', () => {
+  const input = $('#loginPassword');
+
+  if (input) {
+    input.type =
+      input.type === 'password'
+        ? 'text'
+        : 'password';
+  }
+});
+
+$('#loginPassword')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    login();
+  }
+});
+
+$('#loginBtn')?.addEventListener('click', login);
+
+async function login() {
+  const email = $('#loginEmail')?.value.trim();
+  const password = $('#loginPassword')?.value;
+
+  if (!email || !password) {
+    showError('Preenche o email e o passe.');
+    return;
+  }
+
+  const { error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    console.error(error);
+    showError('Email ou passe incorrecto.');
+  }
+}
+
+$('#logoutBtn')?.addEventListener('click', () => {
+  sb.auth.signOut();
+});
+
+
+/* NAVEGAÇÃO */
+
+function go(page) {
+  const target = $('#' + page);
+
+  if (!target) {
+    console.warn(`Página "${page}" não encontrada.`);
+    return;
+  }
+
+  $$('.page').forEach(p => {
+    p.classList.remove('active');
+  });
+
+  target.classList.add('active');
+
+  closeDrawer();
+
+  if (page === 'chat') {
+    loadChat();
+  }
+
+  if (page === 'references') {
+    loadRefs();
+  }
+
+  if (page === 'personal') {
+    loadPersonal();
+  }
+
+  window.scrollTo(0, 0);
+}
+
+$$('[data-page]').forEach(button => {
+  button.addEventListener('click', () => {
+    go(button.dataset.page);
+  });
+});
+
+
+/* MENU */
+
+$('#menuBtn')?.addEventListener('click', () => {
+  $('#drawer')?.classList.add('open');
+
+  $('#backdrop')?.classList.remove('hidden');
+
+  $('#drawerBackdrop')?.classList.remove('hidden');
+});
+
+$('#closeDrawer')?.addEventListener('click', closeDrawer);
+
+$('#backdrop')?.addEventListener('click', closeDrawer);
+
+$('#drawerBackdrop')?.addEventListener('click', closeDrawer);
+
+function closeDrawer() {
+  $('#drawer')?.classList.remove('open');
+
+  $('#backdrop')?.classList.add('hidden');
+
+  $('#drawerBackdrop')?.classList.add('hidden');
+}
+
+const quickButton = $('#quickBtn') || $('#homeQuick');
+
+if (quickButton) {
+  quickButton.addEventListener('click', () => {
+    go('quick');
+  });
+}
+
+
+/* CHAT */
+
+async function loadChat() {
+  if (!user) return;
+
+  const { data, error } = await sb
+    .from('messages')
+    .select(
+      'id,body,created_at,user_id'
+    )
+    .order('created_at', {
+      ascending: true
+    })
+    .limit(300);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const ids = [
+    ...new Set(
+      (data || []).map(x => x.user_id)
+    )
+  ];
+
+  const names = {};
+
+  if (ids.length) {
+    const r = await sb
+      .from('profiles')
+      .select('id,username')
+      .in('id', ids);
+
+    (r.data || []).forEach(x => {
+      names[x.id] = x.username;
+    });
+  }
+
+  const container = $('#messages');
+
+  if (!container) return;
+
+  container.innerHTML = (data || [])
+    .map(message => {
+      const time =
+        new Date(
+          message.created_at
+        ).toLocaleTimeString(
+          'pt-PT',
+          {
+            hour: '2-digit',
+            minute: '2-digit'
+          }
+        );
+
+      return `
+        <div class="message ${
+          message.user_id === user.id
+            ? 'me'
+            : ''
+        }">
+
+          <small>
+            ${esc(
+              names[message.user_id] || 'TF'
+            )}
+            ·
+            ${time}
+          </small>
+
+          <div class="bubble">
+            ${esc(message.body).replace(
+              /\n/g,
+              '<br>'
+            )}
+          </div>
+
+        </div>
+      `;
+    })
+    .join('');
+}
+
+$('#chatForm')?.addEventListener(
+  'submit',
+  async e => {
+    e.preventDefault();
+
+    if (!user) return;
+
+    const input = $('#messageInput');
+
+    const body =
+      input?.value.trim();
+
+    if (!body) return;
+
+    input.disabled = true;
+
+    const { error } = await sb
+      .from('messages')
+      .insert({
+        user_id: user.id,
+        body
+      });
+
+    input.disabled = false;
+
+    if (error) {
+      console.error(error);
+
+      showError(
+        'Não foi possível enviar a mensagem.'
+      );
+
+      return;
+    }
+
+    input.value = '';
+    input.focus();
+
+    await loadChat();
+  }
+);
+
+
+/* REFERÊNCIAS */
+
+async function loadRefs() {
+  const { data, error } = await sb
+    .from('references')
+    .select('*')
+    .order('created_at', {
+      ascending: false
+    });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const container =
+    $('#referenceGrid');
+
+  if (!container) return;
+
+  const refs = data || [];
+
+  container.innerHTML =
+    refs.map((r, i) => {
+      const image =
+        url(r.image_url);
+
+      const link =
+        url(r.link_url);
+
+      return `
+        <article class="reference">
+
+          <div
+            class="ref-image"
+            ${
+              image
+                ? `style="background-image:url('${esc(
+                    image
+                  )}')"`
+                : ''
+            }
+          >
+            ${image ? '' : '✦'}
+          </div>
+
+          <div class="ref-body">
+
+            <span class="micro">
+              REF ${String(i + 1).padStart(2, '0')}
+            </span>
+
+            <h3>
+              ${esc(r.title)}
+            </h3>
+
+            <p>
+              ${esc(r.note || '')}
+            </p>
+
+            ${
+              link
+                ? `
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="${esc(link)}"
+                  >
+                    Abrir ↗
+                  </a>
+                `
+                : ''
+            }
+
+          </div>
+
+        </article>
+      `;
+    }).join('');
+
+  if (!refs.length) {
+    container.innerHTML = `
+      <p
+        style="
+          padding:16px;
+          color:#888;
+          font-size:11px;
+        "
+      >
+        Ainda não existem referências.
+      </p>
+    `;
+  }
+}
+
+$('#newReference')?.addEventListener(
+  'click',
+  () => {
+    $('#refModal')?.classList.remove(
+      'hidden'
+    );
+  }
+);
+
+$$('[data-close]').forEach(button => {
+  button.addEventListener('click', () => {
+    $('#' + button.dataset.close)
+      ?.classList.add('hidden');
+  });
+});
+
+$('#refForm')?.addEventListener(
+  'submit',
+  async e => {
+    e.preventDefault();
+
+    if (!user) return;
+
+    const payload = {
+      user_id: user.id,
+
+      title:
+        $('#refTitle')?.value.trim(),
+
+      image_url:
+        $('#refImage')?.value.trim()
+          || null,
+
+      link_url:
+        $('#refLink')?.value.trim()
+          || null,
+
+      note:
+        $('#refNote')?.value.trim()
+          || null
+    };
+
+    if (!payload.title) return;
+
+    const { error } =
+      await sb
+        .from('references')
+        .insert(payload);
+
+    if (error) {
+      console.error(error);
+
+      alert(
+        'Não foi possível guardar.'
+      );
+
+      return;
+    }
+
+    e.target.reset();
+
+    $('#refModal')
+      ?.classList.add('hidden');
+
+    loadRefs();
+  }
+);
+
+
+/* ESPAÇO PESSOAL */
+
+$$('[data-tab]').forEach(button => {
+  button.addEventListener(
+    'click',
+    () => {
+      activeTab =
+        button.dataset.tab;
+
+      $$('[data-tab]').forEach(
+        item => {
+          item.classList.toggle(
+            'active',
+            item.dataset.tab ===
+              activeTab
+          );
+        }
+      );
+
+      $$('.panel').forEach(
+        panel => {
+          panel.classList.remove(
+            'active'
+          );
+        }
+      );
+
+      $('#tab-' + activeTab)
+        ?.classList.add('active');
+
+      if (
+        activeTab === 'books' ||
+        activeTab === 'tasks'
+      ) {
+        loadPersonal();
+      }
+    }
+  );
+});
+
+
+/* NOTAS */
+
 let noteTimer;
-function saveNotesDebounced(){clearTimeout(noteTimer);noteTimer=setTimeout(async()=>{await sb.from("notes").upsert({user_id:user.id,body:$("#notes").value,updated_at:new Date().toISOString()});},500)}
-$("#saveQuick").onclick=async()=>{await sb.from("notes").upsert({user_id:user.id,quick:$("#quickText").value,updated_at:new Date().toISOString()});$("#saveQuick").textContent="Guardado ✓";setTimeout(()=>$("#saveQuick").textContent="Guardar",1000)};
-async function loadPersonal(){
- const n=await sb.from("notes").select("*").eq("user_id",user.id).maybeSingle();if(n.data){$("#notes").value=n.data.body||"";$("#quickText").value=n.data.quick||""}
- const b=await sb.from("books").select("*").eq("user_id",user.id).eq("status",bookStatus).order("created_at",{ascending:false});
- $("#bookList").innerHTML=(b.data||[]).map(x=>`<div class="list-item"><span>${esc(x.title)}</span><button onclick="deleteBook('${x.id}')">×</button></div>`).join("")||"<p style='font-size:11px;color:#999'>Ainda não tens livros nesta lista.</p>";
- const t=await sb.from("tasks").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
- $("#taskList").innerHTML=(t.data||[]).map(x=>`<div class="list-item ${x.done?"done":""}"><input class="check" type="checkbox" ${x.done?"checked":""} onchange="toggleTask('${x.id}',${!x.done})"><span>${esc(x.title)}</span><button onclick="deleteTask('${x.id}')">×</button></div>`).join("")||"<p style='font-size:11px;color:#999'>Ainda não tens tarefas.</p>";
+
+$('#notes')?.addEventListener(
+  'input',
+  () => {
+    clearTimeout(noteTimer);
+
+    noteTimer = setTimeout(
+      async () => {
+        if (!user) return;
+
+        const { error } =
+          await sb
+            .from('notes')
+            .upsert(
+              {
+                user_id: user.id,
+                body: $('#notes').value,
+                updated_at:
+                  new Date().toISOString()
+              },
+              {
+                onConflict:
+                  'user_id'
+              }
+            );
+
+        if (error) {
+          console.error(error);
+        }
+      },
+      500
+    );
+  }
+);
+
+$('#saveQuick')?.addEventListener(
+  'click',
+  async () => {
+    if (!user) return;
+
+    const { error } =
+      await sb
+        .from('notes')
+        .upsert(
+          {
+            user_id: user.id,
+
+            quick:
+              $('#quickText')
+                ?.value || '',
+
+            updated_at:
+              new Date().toISOString()
+          },
+          {
+            onConflict:
+              'user_id'
+          }
+        );
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const button =
+      $('#saveQuick');
+
+    if (button) {
+      button.textContent =
+        'Guardado ✓';
+
+      setTimeout(() => {
+        button.textContent =
+          'Guardar';
+      }, 1000);
+    }
+  }
+);
+
+
+/* LIVROS E TAREFAS */
+
+async function loadPersonal() {
+  if (!user) return;
+
+  const n =
+    await sb
+      .from('notes')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+  if (n.data) {
+    if ($('#notes')) {
+      $('#notes').value =
+        n.data.body || '';
+    }
+
+    if ($('#quickText')) {
+      $('#quickText').value =
+        n.data.quick || '';
+    }
+  }
+
+  const b =
+    await sb
+      .from('books')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', bookStatus)
+      .order('created_at', {
+        ascending: false
+      });
+
+  const bookList =
+    $('#bookList');
+
+  if (bookList) {
+    bookList.innerHTML =
+      (b.data || [])
+        .map(book => `
+          <div class="list-item">
+
+            <span>
+              ${esc(book.title)}
+            </span>
+
+            <button
+              onclick="deleteBook('${esc(
+                book.id
+              )}')"
+            >
+              ×
+            </button>
+
+          </div>
+        `)
+        .join('')
+        ||
+        `
+          <p
+            style="
+              font-size:11px;
+              color:#999;
+            "
+          >
+            Ainda não tens livros
+            nesta lista.
+          </p>
+        `;
+  }
+
+  const t =
+    await sb
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', {
+        ascending: false
+      });
+
+  const taskList =
+    $('#taskList');
+
+  if (taskList) {
+    taskList.innerHTML =
+      (t.data || [])
+        .map(task => `
+          <div
+            class="list-item ${
+              task.done
+                ? 'done'
+                : ''
+            }"
+          >
+
+            <input
+              class="check"
+              type="checkbox"
+              ${
+                task.done
+                  ? 'checked'
+                  : ''
+              }
+
+              onchange="toggleTask(
+                '${esc(task.id)}',
+                ${!task.done}
+              )"
+            >
+
+            <span>
+              ${esc(task.title)}
+            </span>
+
+            <button
+              onclick="deleteTask(
+                '${esc(task.id)}'
+              )"
+            >
+              ×
+            </button>
+
+          </div>
+        `)
+        .join('')
+        ||
+        `
+          <p
+            style="
+              font-size:11px;
+              color:#999;
+            "
+          >
+            Ainda não tens tarefas.
+          </p>
+        `;
+  }
 }
-$$("[data-list]").forEach(b=>b.onclick=()=>{$$(".book-tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");bookStatus=b.dataset.list;loadPersonal()});
-let inputMode="";
-function openInput(title,placeholder,mode){inputMode=mode;$("#inputTitle").textContent=title;$("#inputValue").placeholder=placeholder;$("#inputValue").value="";$("#inputModal").classList.remove("hidden");setTimeout(()=>$("#inputValue").focus(),100)}
-$("#addBook").onclick=()=>openInput("Adicionar livro","Nome do livro","book");
-$("#addTask").onclick=()=>openInput("Nova tarefa","O que tens de fazer?","task");
-$("#inputSave").onclick=async()=>{const v=$("#inputValue").value.trim();if(!v)return;if(inputMode==="book")await sb.from("books").insert({user_id:user.id,title:v,status:bookStatus});else await sb.from("tasks").insert({user_id:user.id,title:v});$("#inputModal").classList.add("hidden");loadPersonal()};
-window.deleteBook=async id=>{await sb.from("books").delete().eq("id",id).eq("user_id",user.id);loadPersonal()};
-window.toggleTask=async(id,done)=>{await sb.from("tasks").update({done}).eq("id",id).eq("user_id",user.id);loadPersonal()};
-window.deleteTask=async id=>{await sb.from("tasks").delete().eq("id",id).eq("user_id",user.id);loadPersonal()};
 
-let tracks=[];
-$("#addMusic").onclick=()=>$("#audioFiles").click();
-$("#audioFiles").onchange=e=>{tracks=[...e.target.files].map(f=>({name:f.name,url:URL.createObjectURL(f)}));audioIndex=0;if(tracks.length)loadTrack()};
-function loadTrack(){const t=tracks[audioIndex];$("#audio").src=t.url;$("#trackTitle").textContent=t.name;$("#trackArtist").textContent="TF / música local";$("#musicName").textContent=t.name;$("#audio").play();$("#play").textContent="Ⅱ"}
-$("#play").onclick=()=>{if(!$("#audio").src)return;$("#audio").paused?($("#audio").play(),$("#play").textContent="Ⅱ"):($("#audio").pause(),$("#play").textContent="▶")};
-$("#prev").onclick=()=>{if(tracks.length){audioIndex=(audioIndex-1+tracks.length)%tracks.length;loadTrack()}};
-$("#next").onclick=()=>{if(tracks.length){audioIndex=(audioIndex+1)%tracks.length;loadTrack()}};
-$("#audio").onended=()=>$("#next").click();$("#audio").ontimeupdate=()=>$("#progress").style.width=$("#audio").duration?($("#audio").currentTime/$("#audio").duration*100)+"%":"0%";
+$$('[data-list]').forEach(button => {
+  button.addEventListener(
+    'click',
+    () => {
+      $$('.book-tabs button')
+        .forEach(x => {
+          x.classList.remove(
+            'active'
+          );
+        });
 
-async function loadAll(){await loadChat();await loadRefs();await loadPersonal()}
-let realtimeStarted=false;
-function subscribeRealtime(){if(realtimeStarted)return;realtimeStarted=true;sb.channel("tf-live").on("postgres_changes",{event:"*",schema:"public",table:"messages"},loadChat).on("postgres_changes",{event:"*",schema:"public",table:"references"},loadRefs).on("postgres_changes",{event:"*",schema:"public",table:"notes"},loadPersonal).on("postgres_changes",{event:"*",schema:"public",table:"books"},loadPersonal).on("postgres_changes",{event:"*",schema:"public",table:"tasks"},loadPersonal).subscribe()}
+      button.classList.add(
+        'active'
+      );
+
+      bookStatus =
+        button.dataset.list;
+
+      loadPersonal();
+    }
+  );
+});
+
+let inputMode = '';
+
+function openInput(
+  title,
+  placeholder,
+  mode
+) {
+  inputMode = mode;
+
+  if ($('#inputTitle')) {
+    $('#inputTitle').textContent =
+      title;
+  }
+
+  if ($('#inputValue')) {
+    $('#inputValue').placeholder =
+      placeholder;
+
+    $('#inputValue').value = '';
+  }
+
+  $('#inputModal')
+    ?.classList.remove('hidden');
+
+  setTimeout(() => {
+    $('#inputValue')?.focus();
+  }, 100);
+}
+
+$('#addBook')?.addEventListener(
+  'click',
+  () => {
+    openInput(
+      'Adicionar livro',
+      'Nome do livro',
+      'book'
+    );
+  }
+);
+
+$('#addTask')?.addEventListener(
+  'click',
+  () => {
+    openInput(
+      'Nova tarefa',
+      'O que tens de fazer?',
+      'task'
+    );
+  }
+);
+
+$('#inputSave')?.addEventListener(
+  'click',
+  async () => {
+    if (!user) return;
+
+    const value =
+      $('#inputValue')
+        ?.value.trim();
+
+    if (!value) return;
+
+    let result;
+
+    if (inputMode === 'book') {
+      result =
+        await sb
+          .from('books')
+          .insert({
+            user_id: user.id,
+            title: value,
+            status: bookStatus
+          });
+    } else {
+      result =
+        await sb
+          .from('tasks')
+          .insert({
+            user_id: user.id,
+            title: value,
+            done: false
+          });
+    }
+
+    if (result.error) {
+      console.error(
+        result.error
+      );
+
+      alert(
+        'Não foi possível guardar.'
+      );
+
+      return;
+    }
+
+    $('#inputModal')
+      ?.classList.add('hidden');
+
+    loadPersonal();
+  }
+);
+
+window.deleteBook =
+  async id => {
+    if (!user) return;
+
+    const { error } =
+      await sb
+        .from('books')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+      console.error(error);
+    }
+
+    loadPersonal();
+  };
+
+window.toggleTask =
+  async (id, done) => {
+    if (!user) return;
+
+    const { error } =
+      await sb
+        .from('tasks')
+        .update({ done })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+      console.error(error);
+    }
+
+    loadPersonal();
+  };
+
+window.deleteTask =
+  async id => {
+    if (!user) return;
+
+    const { error } =
+      await sb
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+      console.error(error);
+    }
+
+    loadPersonal();
+  };
+
+
+/* MÚSICA */
+
+$('#addMusic')?.addEventListener(
+  'click',
+  () => {
+    $('#audioFiles')?.click();
+  }
+);
+
+$('#audioFiles')?.addEventListener(
+  'change',
+  e => {
+    audioTracks =
+      [...e.target.files]
+        .map(file => ({
+          name: file.name,
+          url:
+            URL.createObjectURL(file)
+        }));
+
+    audioIndex = 0;
+
+    if (audioTracks.length) {
+      loadTrack();
+    }
+  }
+);
+
+function loadTrack() {
+  const track =
+    audioTracks[audioIndex];
+
+  const audio =
+    $('#audio');
+
+  if (!track || !audio) return;
+
+  audio.src = track.url;
+
+  if ($('#trackTitle')) {
+    $('#trackTitle').textContent =
+      track.name;
+  }
+
+  if ($('#trackArtist')) {
+    $('#trackArtist').textContent =
+      'TF / música local';
+  }
+
+  if ($('#musicName')) {
+    $('#musicName').textContent =
+      track.name;
+  }
+
+  audio
+    .play()
+    .then(() => {
+      if ($('#play')) {
+        $('#play').textContent =
+          'Ⅱ';
+      }
+    })
+    .catch(() => {});
+}
+
+$('#play')?.addEventListener(
+  'click',
+  () => {
+    const audio =
+      $('#audio');
+
+    if (!audio?.src) return;
+
+    if (audio.paused) {
+      audio.play();
+
+      $('#play').textContent =
+        'Ⅱ';
+    } else {
+      audio.pause();
+
+      $('#play').textContent =
+        '▶';
+    }
+  }
+);
+
+$('#prev')?.addEventListener(
+  'click',
+  () => {
+    if (!audioTracks.length)
+      return;
+
+    audioIndex =
+      (
+        audioIndex - 1 +
+        audioTracks.length
+      ) %
+      audioTracks.length;
+
+    loadTrack();
+  }
+);
+
+$('#next')?.addEventListener(
+  'click',
+  () => {
+    if (!audioTracks.length)
+      return;
+
+    audioIndex =
+      (
+        audioIndex + 1
+      ) %
+      audioTracks.length;
+
+    loadTrack();
+  }
+);
+
+$('#audio')?.addEventListener(
+  'ended',
+  () => {
+    $('#next')?.click();
+  }
+);
+
+$('#audio')?.addEventListener(
+  'timeupdate',
+  () => {
+    const audio =
+      $('#audio');
+
+    const progress =
+      $('#progress');
+
+    if (
+      !audio ||
+      !progress ||
+      !audio.duration
+    ) {
+      if (progress) {
+        progress.style.width =
+          '0%';
+      }
+
+      return;
+    }
+
+    progress.style.width =
+      `${
+        (
+          audio.currentTime /
+          audio.duration
+        ) * 100
+      }%`;
+  }
+);
+
+
+/* CARREGAMENTO */
+
+async function loadAll() {
+  await Promise.all([
+    loadChat(),
+    loadRefs(),
+    loadPersonal()
+  ]);
+}
+
+
+/* REALTIME */
+
+function subscribeRealtime() {
+  if (realtimeChannel)
+    return;
+
+  realtimeChannel =
+    sb
+      .channel('tf-live')
+
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        loadChat
+      )
+
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'references'
+        },
+        loadRefs
+      )
+
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes'
+        },
+        loadPersonal
+      )
+
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'books'
+        },
+        loadPersonal
+      )
+
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        loadPersonal
+      )
+
+      .subscribe(
+        status => {
+          console.log(
+            'TF realtime:',
+            status
+          );
+        }
+      );
+}
 
 boot();
