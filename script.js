@@ -2056,6 +2056,16 @@ function subscribeRealtime() {
           );
         }
       );
+
+   .on(
+  'postgres_changes',
+  {
+    event: '*',
+    schema: 'public',
+    table: 'music'
+  },
+  loadMusic
+)
 }
 
 boot();
