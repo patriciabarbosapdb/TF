@@ -2056,3 +2056,30 @@ function subscribeRealtime() {
 }
 
 boot();
+async function testSupabase() {
+
+    console.log('A testar Supabase...');
+
+    const { data, error } =
+        await sb
+            .from('profiles')
+            .select('id, username')
+            .limit(2);
+
+    if (error) {
+
+        console.error(
+            '❌ SUPABASE ERRO:',
+            error
+        );
+
+        return;
+    }
+
+    console.log(
+        '✅ SUPABASE LIGADO:',
+        data
+    );
+}
+
+testSupabase();
