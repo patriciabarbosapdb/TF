@@ -365,10 +365,6 @@ if (loginUser) {
    MOSTRAR / ESCONDER PASSE
 ========================================= */
 
-const $ = selector =>
-  document.querySelector(selector);
-
-
 $('#showPassword')?.addEventListener(
   'click',
   () => {
