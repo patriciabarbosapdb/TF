@@ -29,101 +29,107 @@
 
 <body>
 
-  <!-- =========================
-       LOGIN
-  ========================== -->
+<!-- =========================
+     LOGIN
+========================== -->
 
-  <section
-    id="login"
-    class="login-screen"
-  >
+<section id="login" class="login-screen">
 
     <div class="login-stars">
-      ✦ · ✦
+        ✦ · ✦
     </div>
 
     <div class="login-logo">
-      TF
+        TF
     </div>
 
     <p class="login-line">
-      between black and white,
-      <br>
-      we create.
+        between black and white,
+        <br>
+        we create.
     </p>
 
 
     <div class="login-form">
 
-      <label class="field-label">
-        Quem és?
-      </label>
+        <label class="field-label">
+            Quem és?
+        </label>
 
-      <select id="loginUser">
+        <select id="loginUser">
 
-        <option value="LadyWhite">
-          LadyWhite
-        </option>
+            <option value="LadyWhite">
+                LadyWhite
+            </option>
 
-        <option value="LadyBlack">
-          LadyBlack
-        </option>
+            <option value="LadyBlack">
+                LadyBlack
+            </option>
 
-      </select>
-
-
-      <label class="field-label">
-        Email
-      </label>
-
-      <input
-        id="loginEmail"
-        type="email"
-        placeholder="o teu email"
-        autocomplete="email"
-      >
+        </select>
 
 
-      <label class="field-label">
-        Passe
-      </label>
-
-      <div class="password-wrap">
+        <label class="field-label">
+            Email
+        </label>
 
         <input
-          id="loginPassword"
-          type="password"
-          placeholder="••••••••"
-          autocomplete="current-password"
+            id="loginEmail"
+            type="email"
+            placeholder="o teu email"
+            autocomplete="email"
         >
+
+
+        <label class="field-label">
+            Passe
+        </label>
+
+        <div class="password-wrap">
+
+            <input
+                id="loginPassword"
+                type="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+            >
+
+            <button
+                id="showPassword"
+                type="button"
+            >
+                ◉
+            </button>
+
+        </div>
+
 
         <button
-          id="showPassword"
-          type="button"
+            id="loginBtn"
+            class="enter-btn"
+            type="button"
         >
-          ◉
+            ENTRAR
         </button>
 
-      </div>
+
+        <button
+            id="forgotPassword"
+            class="forgot-password"
+            type="button"
+        >
+            Esqueci-me do passe
+        </button>
 
 
-      <button
-        id="loginBtn"
-        class="enter-btn"
-        type="button"
-      >
-        ENTRAR
-      </button>
-
-
-      <p
-        id="loginError"
-        class="error"
-      ></p>
+        <p
+            id="loginError"
+            class="error"
+        ></p>
 
     </div>
 
-  </section>
+</section>
 
 
 
